@@ -28,7 +28,7 @@ function assert(condition: boolean, message: string) {
 }
 
 async function main() {
-  console.log('\n🧪 Component-Vision Smoke Test (v4.0 "Performance Guardian")\n');
+  console.log('\n🧪 Rhizophora Smoke Test (v4.0 "Performance Guardian")\n');
 
   // ─── Test config loading ───────────────────────────────────
   console.log('🔍 Testing Config Loader...');

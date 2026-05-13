@@ -1,8 +1,8 @@
 # ============================================================
-# Component-Vision CI — Performance Guardian for React Native
+# Rhizophora CI — Performance Guardian for React Native
 # v4.0
 #
-# This workflow runs Component-Vision's static analysis tools
+# This workflow runs Rhizophora's static analysis tools
 # on all .tsx/.jsx files in the PR diff. It enforces:
 #   - Zero bridge crossings (useState/useEffect inside handlers)
 #   - Zero render traps (inline functions/objects breaking memo)
@@ -12,7 +12,7 @@
 # Fails the PR if any issues are found.
 # ============================================================
 
-name: Component-Vision Performance Check
+name: Rhizophora Performance Check
 
 on:
   pull_request:
@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Component-Vision
+      - name: Build Rhizophora
         run: npm run build
 
       - name: Get changed .tsx/.jsx files
@@ -52,18 +52,18 @@ jobs:
             **/*.tsx
             **/*.jsx
 
-      - name: Run Component-Vision CI check
+      - name: Run Rhizophora CI check
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          npx component-vision --ci ${{ steps.changed-files.outputs.all_changed_files }}
+          npx Rhizophora --ci ${{ steps.changed-files.outputs.all_changed_files }}
 
       - name: Post summary
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Component-Vision: All performance checks passed!"
+            echo "✅ Rhizophora: All performance checks passed!"
           else
-            echo "❌ Component-Vision: Performance issues detected. Review the logs above."
+            echo "❌ Rhizophora: Performance issues detected. Review the logs above."
             echo ""
             echo "Common fixes:"
             echo "  - Bridge crossings: Move useState/useEffect outside onScroll/onLayout"

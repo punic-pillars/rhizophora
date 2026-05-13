@@ -71,7 +71,7 @@ export interface ComponentVisionConfig {
 }
 
 /**
- * Load Component Vision config from a .component-vision.json file.
+ * Load Component Vision config from a .Rhizophora.json file.
  * Searches upward from the given directory.
  * Uses dynamic import() for ESM compatibility.
  */
@@ -82,7 +82,7 @@ export async function loadConfig(startDir?: string): Promise<ComponentVisionConf
   
   let current = dir;
   while (true) {
-    const configPath = join(current, '.component-vision.json');
+    const configPath = join(current, '.Rhizophora.json');
     if (existsSync(configPath)) {
       try {
         const raw = readFileSync(configPath, 'utf-8');
