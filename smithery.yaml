@@ -1,0 +1,12 @@
+# Smithery registry configuration for Rhizophora MCP server
+# https://smithery.ai/docs/deployments
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+    description: Zero-configuration MCP server. No environment variables needed.
+  commandFunction:
+    |-
+      (config) => ({ command: 'node', args: ['build/index.js'] })
