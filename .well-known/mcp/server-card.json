@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "1.0",
+  "server": {
+    "name": "rhizophora",
+    "version": "0.1.4",
+    "description": "Rhizophora -- Architectural X-Ray for React Native. AST-driven Vein Propagation Engine that reveals hidden component structure, detects layout gaps, bridge crossings, render traps, and SharedValue lifecycle issues.",
+    "homepage": "https://github.com/punic-pillars/rhizophora",
+    "license": "MIT"
+  },
+  "capabilities": {
+    "tools": {
+      "render_structural_diagram": {
+        "description": "Render an ASCII structural diagram showing JSX nesting, StyleSheet properties, animated styles, and layout relationships."
+      },
+      "analyze_component_tree": {
+        "description": "Render a cross-file ASCII structural diagram with spacing annotations, layout properties, slot markers, and health score."
+      },
+      "profile_screen_complexity": {
+        "description": "Generate a screen complexity profile (Bill of Materials) with health score and complexity grade."
+      },
+      "trace_component_import": {
+        "description": "Trace a component's import chain from usage to source definition through barrel files and re-exports."
+      },
+      "detect_boundary_gaps": {
+        "description": "Scan for layout gaps: hardcoded magic numbers, missing onLayout handlers, zero-height children, and design token deviations."
+      },
+      "audit_design_tokens": {
+        "description": "Scan for spacing values not in the design token whitelist."
+      },
+      "detect_absolute_overlaps": {
+        "description": "Scan for absolutely-positioned elements and flag potential overlap issues."
+      },
+      "detect_bridge_crossings": {
+        "description": "Scan for useState/useEffect calls inside onScroll, onLayout, gesture handlers, and worklet functions."
+      },
+      "detect_render_traps": {
+        "description": "Scan for inline functions, objects, and arrays passed as props to React.memo() wrapped components."
+      },
+      "trace_shared_value_lineage": {
+        "description": "Trace useSharedValue lifecycle: declarations, mutations, consumption, and non-worklet mutations."
+      },
+      "detect_nested_lists": {
+        "description": "Scan for nested .map() calls -- a known React Native performance anti-pattern."
+      },
+      "audit_spacing_rhythm": {
+        "description": "Validate gaps using Proximity Score between siblings with Intra/Inter section rules."
+      },
+      "audit_semantic_proximity": {
+        "description": "3-variable Semantic Scoring Engine (Lexical 40% + Prop DNA 30% + Visual 30%) for sibling pair proximity."
+      }
+    }
+  },
+  "deployment": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "rhizophora"],
+    "env": {}
+  }
+}
