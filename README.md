@@ -1,16 +1,16 @@
 # Rhizophora
 
-**v0.1.4 -- Architectural X-Ray for React Native**
+**v0.1.4 -- MCP Server: Architectural X-Ray for React Native**
 
 [![npm version](https://img.shields.io/npm/v/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
 [![npm downloads](https://img.shields.io/npm/dm/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
+[![MCP](https://img.shields.io/badge/MCP-Server-blue)](https://modelcontextprotocol.io)
 [![GitHub](https://img.shields.io/badge/github-punic--pillars%2Frhizophora-blue)](https://github.com/punic-pillars/rhizophora)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Smithery](https://img.shields.io/badge/smithery-available-purple)](https://smithery.ai/server/punic-pillars/rhizophora)
 
-Deterministic static analysis that gives AI spatial awareness of your component trees. Three phases: **Guardians** catch pollution and performance bugs. **Architects** enforce layout hygiene. **Profilers** optimize for 60fps.
+An AI reading your source code sees characters, not composition. It cannot tell that two components are too close, that a margin is leaking, or that an animation is running on the wrong thread. Rhizophora gives AI spatial awareness of React Native layout -- translating static `.tsx` files into a semantic map that an AI can audit with deterministic precision. A Model Context Protocol (MCP) server that plugs into any AI coding assistant. Three phases: **Guardians** catch pollution and performance bugs. **Architects** enforce layout hygiene. **Profilers** optimize for 60fps.
 
-No server to run. No emulator. No runtime. Analyzes your source files directly -- works offline, in CI/CD, or inside your AI coding session.
+No server to run. No emulator. No runtime. Works offline, in CI/CD, or inside your AI coding session.
 
 > *Rhizophora -- the mangrove whose prop roots spread above ground, connecting what's hidden beneath the surface. Like Vein Propagation, it reveals the invisible structure of your component trees.*
 
@@ -20,7 +20,7 @@ No server to run. No emulator. No runtime. Analyzes your source files directly -
 
 Standard linters check syntax. Rhizophora checks **runtime architecture**.
 
-AI models are blind to layout -- they read tokens, not pixels. Rhizophora translates raw code into a **Semantic Layout Graph**, giving AI the spatial awareness to see that two components are too close, a margin is leaking into a parent, or an animation value is being mutated on the wrong thread.
+AI models cannot see your app's layout, feel its spacing rhythm, or know if design tokens are followed. They read tokens, not pixels. Rhizophora translates raw code into a **Semantic Layout Graph** -- a prosthetic vision system that gives AI the spatial awareness to see that two components are too close, a margin is leaking into a parent, or an animation value is being mutated on the wrong thread.
 
 **Key differentiators:**
 - **Deterministic, not probabilistic** -- Uses strict AST parsing and mathematical algorithms (3-variable Proximity Score). No AI guessing pixels, no hallucinations.
