@@ -1,6 +1,6 @@
 # Rhizophora
 
-**v0.1.4 -- MCP Server: Architectural X-Ray for React Native**
+**MCP Server: Architectural X-Ray for React Native**
 
 [![npm version](https://img.shields.io/npm/v/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
 [![npm downloads](https://img.shields.io/npm/dm/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
