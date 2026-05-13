@@ -2,6 +2,15 @@
   "name": "rhizophora",
   "version": "0.1.0",
   "description": "Rhizophora — Architectural X-Ray for React Native. AST-driven Vein Propagation Engine that reveals hidden component structure, detects layout gaps, bridge crossings, render traps, and SharedValue lifecycle issues. 13 MCP tools for structural analysis, layout auditing, performance profiling, and semantic orchestration.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/punic-pillars/rhizophora.git"
+  },
+  "bugs": {
+    "url": "https://github.com/punic-pillars/rhizophora/issues"
+  },
+  "homepage": "https://github.com/punic-pillars/rhizophora#readme",
   "main": "build/index.js",
   "type": "module",
   "bin": {
