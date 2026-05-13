@@ -106,7 +106,7 @@ npx tsx src/__tests__/smoke-test.ts
       "timeout": 60,
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "rhizophora-mcp"]
+      "args": ["-y", "rhizophora"]
     }
   }
 }
@@ -156,10 +156,10 @@ The Vein Propagation Engine processes source code through 4 deterministic phases
 
 ```bash
 # Check files (exit code 1 on failure)
-npx rhizophora --ci src/components/MyComponent.tsx
+npx rhizophora-cli --ci src/components/MyComponent.tsx
 
 # JSON output for pipeline parsing
-npx rhizophora --ci --json src/**/*.tsx
+npx rhizophora-cli --ci --json src/**/*.tsx
 ```
 
 | Flag | Description |

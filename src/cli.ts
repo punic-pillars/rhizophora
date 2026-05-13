@@ -6,15 +6,15 @@
 //   SharedValue lineage, boundary gaps).
 //
 // Usage:
-//   npx rhizophora --ci <file1.tsx> [file2.tsx ...]
-//   npx rhizophora --ci --paired-files <file1.tsx> <file2.tsx> [...]
+//   npx rhizophora-cli --ci <file1.tsx> [file2.tsx ...]
+//   npx rhizophora-cli --ci --paired-files <file1.tsx> <file2.tsx> [...]
 //
 // Exit codes:
 //   0 — All checks passed (no issues found)
 //   1 — Issues found (bridge crossings, render traps, etc.)
 //
 // JSON output mode (for CI parsing):
-//   npx rhizophora --ci --json <file1.tsx> [...]
+//   npx rhizophora-cli --ci --json <file1.tsx> [...]
 // ============================================================
 
 import { BridgeCrossingDetector } from './engine/BridgeCrossingDetector.js';
@@ -38,9 +38,9 @@ function printUsage(): void {
 Rhizophora v0.1.0 — Architectural X-Ray for React Native
 
 Usage:
-  npx rhizophora --ci <file1.tsx> [file2.tsx ...]
-  npx rhizophora --ci --json <file1.tsx> [...]
-  npx rhizophora --ci --paired-files <file1.tsx> <file2.tsx> [...]
+  npx rhizophora-cli --ci <file1.tsx> [file2.tsx ...]
+  npx rhizophora-cli --ci --json <file1.tsx> [...]
+  npx rhizophora-cli --ci --paired-files <file1.tsx> <file2.tsx> [...]
 
 Options:
   --ci             Run in CI mode (exit with code 1 on failures)
