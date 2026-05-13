@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.4 (2026-05-13)
+
+### Fixes
+
+- Fix Smithery badge URL in README: `servers/` -> `server/` (correct URL format)
+- Fix `smithery.yaml` start command: `node build/index.js` -> `npx -y rhizophora` (uses published npm package directly)
+
 ## v0.1.0 (First Public Release)
 
 ### Features

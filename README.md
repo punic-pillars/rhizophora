@@ -1,12 +1,12 @@
 # Rhizophora
 
-**v0.1.0 -- Architectural X-Ray for React Native**
+**v0.1.4 -- Architectural X-Ray for React Native**
 
 [![npm version](https://img.shields.io/npm/v/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
 [![npm downloads](https://img.shields.io/npm/dm/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
 [![GitHub](https://img.shields.io/badge/github-punic--pillars%2Frhizophora-blue)](https://github.com/punic-pillars/rhizophora)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Smithery](https://img.shields.io/badge/smithery-available-purple)](https://smithery.ai/servers/punic-pillars/rhizophora)
+[![Smithery](https://img.shields.io/badge/smithery-available-purple)](https://smithery.ai/server/punic-pillars/rhizophora)
 
 Deterministic static analysis that gives AI spatial awareness of your component trees. Three phases: **Guardians** catch pollution and performance bugs. **Architects** enforce layout hygiene. **Profilers** optimize for 60fps.
 

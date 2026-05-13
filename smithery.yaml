@@ -9,4 +9,4 @@ startCommand:
     description: Zero-configuration MCP server. No environment variables needed.
   commandFunction:
     |-
-      (config) => ({ command: 'node', args: ['build/index.js'] })
+      (config) => ({ command: 'npx', args: ['-y', 'rhizophora'] })

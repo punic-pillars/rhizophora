@@ -1,6 +1,6 @@
 {
   "name": "rhizophora",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Rhizophora — Architectural X-Ray for React Native. AST-driven Vein Propagation Engine that reveals hidden component structure, detects layout gaps, bridge crossings, render traps, and SharedValue lifecycle issues. 13 MCP tools for structural analysis, layout auditing, performance profiling, and semantic orchestration.",
   "keywords": [
     "react-native",
