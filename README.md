@@ -1,6 +1,6 @@
 # Rhizophora
 
-**MCP Server: Architectural X-Ray for React Native**
+**Spatial Integrity & Layout Audit for React Native**
 
 [![npm version](https://img.shields.io/npm/v/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
 [![npm downloads](https://img.shields.io/npm/dm/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
@@ -8,7 +8,7 @@
 [![GitHub](https://img.shields.io/badge/github-punic--pillars%2Frhizophora-blue)](https://github.com/punic-pillars/rhizophora)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-An AI reading your source code sees characters, not composition. It cannot tell that two components are too close, that a margin is leaking, or that an animation is running on the wrong thread. Rhizophora gives AI spatial awareness of React Native layout -- translating static `.tsx` files into a semantic map that an AI can audit with deterministic precision. A Model Context Protocol (MCP) server that plugs into any AI coding assistant. Three phases: **Guardians** catch pollution and performance bugs. **Architects** enforce layout hygiene. **Profilers** optimize for 60fps.
+An AI reading your source code sees characters, not composition. It cannot tell that two components are too close, that a margin is leaking, or that an animation is running on the wrong thread. Rhizophora eliminates AI layout hallucinations by providing **Ground Truth** for your component tree -- translating static `.tsx` files into a deterministic layout audit that catches margin pollution, token deviations, and spacing gaps that an LLM would never see. A Model Context Protocol (MCP) server that plugs into any AI coding assistant. Three phases: **Guardians** catch pollution and performance bugs. **Architects** enforce layout hygiene. **Profilers** optimize for 60fps.
 
 No server to run. No emulator. No runtime. Works offline, in CI/CD, or inside your AI coding session.
 
@@ -26,6 +26,10 @@ AI models cannot see your app's layout, feel its spacing rhythm, or know if desi
 - **Deterministic, not probabilistic** -- Uses strict AST parsing and mathematical algorithms (3-variable Proximity Score). No AI guessing pixels, no hallucinations.
 - **Native-specific intelligence** -- Catches bridge crossings, SharedValue thread violations, and ghost margins that standard linters cannot see.
 - **Foundation Check enforcement** -- If children use hardcoded margins instead of parent `gap`, Rhizophora blocks the analysis with a HIGH severity message directing you to fix the foundation first. Opinionated gatekeeping that forces best practices.
+
+### The Rhizome vs. The Hallucination
+
+In nature, a rhizome is a hidden network that dictates where the plant can grow. In React Native, your design tokens and spatial constraints are that network. AI models hallucinate because they see the "leaves" but ignore the "roots." Rhizophora exposes the root system, ensuring that every generated component is anchored in your project's actual spatial reality.
 
 ---
 
