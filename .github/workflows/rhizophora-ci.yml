@@ -1,9 +1,8 @@
 # ============================================================
-# Rhizophora CI — Performance Guardian for React Native
-# v4.0
+# Rhizophora CI -- Performance Guardian for React Native
 #
-# This workflow runs Rhizophora's static analysis tools
-# on all .tsx/.jsx files in the PR diff. It enforces:
+# Runs Rhizophora's static analysis tools on all .tsx/.jsx
+# files in the PR diff. Enforces:
 #   - Zero bridge crossings (useState/useEffect inside handlers)
 #   - Zero render traps (inline functions/objects breaking memo)
 #   - Healthy SharedValue lineage (no dead or misused values)
@@ -55,15 +54,15 @@ jobs:
       - name: Run Rhizophora CI check
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          npx Rhizophora --ci ${{ steps.changed-files.outputs.all_changed_files }}
+          npx rhizophora --ci ${{ steps.changed-files.outputs.all_changed_files }}
 
       - name: Post summary
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Rhizophora: All performance checks passed!"
+            echo "Rhizophora: All performance checks passed!"
           else
-            echo "❌ Rhizophora: Performance issues detected. Review the logs above."
+            echo "Rhizophora: Performance issues detected. Review the logs above."
             echo ""
             echo "Common fixes:"
             echo "  - Bridge crossings: Move useState/useEffect outside onScroll/onLayout"
