@@ -87,6 +87,20 @@ function getOrAnalyze(filePath: string, designTokens?: number[], forceRefresh = 
 }
 
 /**
+ * Get or analyze a file and return the raw graph + inference + truncation
+ * for serialization purposes (snapshot_layout_graph tool).
+ * This bypasses the BoundaryGapReport conversion and returns the raw data.
+ */
+export function getOrAnalyzeForSnapshot(ctx: AnalysisContext): {
+  graph: SemanticLayoutGraph;
+  inference: InferenceResult;
+  truncation: TruncationInfo;
+} {
+  const { graph, inference, truncation } = getOrAnalyze(ctx.filePath, undefined, false, ctx);
+  return { graph, inference, truncation };
+}
+
+/**
  * Clear the analysis cache entirely.
  */
 export function clearCache(): void {

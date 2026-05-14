@@ -29,6 +29,8 @@ import { handleDetectNestedLists } from './tools/nestedLists.js';
 import { handleDetectAbsoluteOverlaps } from './tools/absoluteOverlaps.js';
 import { handleAuditSpacingRhythm } from './tools/spacingRhythm.js';
 import { handleAuditSemanticProximity } from './tools/semanticProximity.js';
+import { handleSnapshotLayoutGraph } from './tools/snapshotLayoutGraph.js';
+import { handleDiffLayoutGraphs } from './tools/diffLayoutGraphs.js';
 
 // ─── Server Definition ───────────────────────────────────────
 
@@ -125,6 +127,19 @@ const TOOL_DEFINITIONS = [
       inputSchema: TOOL_INPUT_SCHEMAS.audit_semantic_proximity,
     },
 
+    // ─── v1.0.0: Regression Detection Tools ──────────────────────
+
+    {
+      name: 'snapshot_layout_graph',
+      description: `[Serialization] Take a snapshot of the Semantic Layout Graph and write it to a .rhizome/ JSON file for cross-commit diffing. Captures the full component tree with spacing annotations, layout properties, violation counts, health score, and complexity profile. → Hand-off: call diff_layout_graphs after making changes to compare snapshots.`,
+      inputSchema: TOOL_INPUT_SCHEMAS.snapshot_layout_graph,
+    },
+    {
+      name: 'diff_layout_graphs',
+      description: `[Serialization] Compare two layout graph snapshots and produce a structured diff report showing structural changes (nodes added/removed), spacing changes (margin/padding/gap deltas), violation count changes, health score changes, and complexity grade changes. → Hand-off: use snapshot_layout_graph first to create the snapshots.`,
+      inputSchema: TOOL_INPUT_SCHEMAS.diff_layout_graphs,
+    },
+
 ];
 
 // ─── Handler Registration ────────────────────────────────────
@@ -168,6 +183,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return handleAuditSpacingRhythm(args as Record<string, unknown>);
       case 'audit_semantic_proximity':
         return handleAuditSemanticProximity(args as Record<string, unknown>);
+
+      // v1.0.0: Regression Detection Tools
+      case 'snapshot_layout_graph':
+        return handleSnapshotLayoutGraph(args as Record<string, unknown>);
+      case 'diff_layout_graphs':
+        return handleDiffLayoutGraphs(args as Record<string, unknown>);
 
       default:
         return {

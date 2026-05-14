@@ -33,9 +33,11 @@ In nature, a rhizome is a hidden network that dictates where the plant can grow.
 
 ---
 
-## Tools (13 total)
+## Tools (15 total)
 
 > **Performance Guards (v0.2.0):** All Vein-powered tools (marked **[Vein-Powered AST]**) accept optional `maxFiles` (default 20), `maxFileSizeKB` (default 500), and `timeoutMs` (default 10000) to prevent runaway analysis on large codebases. When limits are hit, the analysis degrades gracefully with a truncation notice rather than failing.
+
+> **Regression Detection (v0.3.0):** Two new serialization tools (`snapshot_layout_graph`, `diff_layout_graphs`) enable cross-commit layout regression detection. Snapshots are stored as `.rhizome/` JSON files that can be committed to git and compared across branches.
 
 ### Phase 1: Guardians -- Catch Pollution & Performance Bugs
 
@@ -65,6 +67,13 @@ In nature, a rhizome is a hidden network that dictates where the plant can grow.
 | `audit_spacing_rhythm` | **Orchestration** -- Enforces `inner_gap < outer_gap` to prevent flat UIs. **Includes Foundation Check**: blocked if children use hardcoded margins instead of parent gap |
 | `audit_semantic_proximity` | **Orchestration** -- Clusters sibling components by semantic prefix to detect ungrouped related components. **Includes Foundation Check**: blocked if container has margin pollution |
 
+### Phase 4: Regression Detection -- Prevent Layout Drift
+
+| Tool | What it does |
+|------|-------------|
+| `snapshot_layout_graph` | **[Serialization]** Serializes the full Semantic Layout Graph (component tree, spacing annotations, layout properties, violation counts, health score, complexity profile) to a `.rhizome/` JSON file. Captures git commit hash and timestamp for cross-commit comparison |
+| `diff_layout_graphs` | **[Serialization]** Compares two layout graph snapshots and produces a structured diff report showing structural changes (nodes added/removed), spacing changes (margin/padding/gap deltas), violation count changes, health score changes, and complexity grade changes |
+
 ---
 
 ## Recommended Workflow
@@ -84,6 +93,9 @@ Phase 3: Profilers (optimize rendering)
   detect_bridge_crossings    ->  trace_shared_value_lineage
   detect_render_traps
   detect_nested_lists        ->  detect_boundary_gaps
+
+Phase 4: Regression Detection (prevent layout drift)
+  snapshot_layout_graph      ->  [make changes]  ->  snapshot_layout_graph  ->  diff_layout_graphs
 ```
 
 **Foundation Check**: `audit_spacing_rhythm` and `audit_semantic_proximity` both run a Foundation Check before analysis. If a container's children use hardcoded margins instead of parent-controlled `gap`, the analysis is blocked with a HIGH severity message directing you to run `detect_boundary_gaps` first. This prevents suggesting semantic grouping or rhythm scaling on top of polluted spacing architecture.

@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.3.0 (2026-05-14)
+
+### Features
+
+- **Layout Graph Serialization**: Added `snapshot_layout_graph` MCP tool that serializes the full Semantic Layout Graph (component tree, spacing annotations, layout properties, violation counts, health score, complexity profile) to `.rhizome/` JSON files. Includes `GraphSerializer` with git commit hash capture, flat node map with explicit edge list, and file I/O helpers.
+- **Cross-Commit Regression Detection**: Added `diff_layout_graphs` MCP tool that compares two serialized snapshots and produces a structured diff report. Uses stable node matching via `componentName:lineNumber` (not ephemeral node IDs). Detects structural changes (nodes added/removed), spacing changes (all margin/padding/gap property deltas), violation count changes, health score changes, and complexity grade changes.
+- **Serialization Infrastructure**: Created `src/engine/serialization/` module with `GraphSerializer.ts`, `GraphComparator.ts`, and barrel export. Created `src/domain/types/serialized-graph.ts` with complete schema for `SerializedGraph`, `GraphDiff`, and all supporting types.
+- **VeinToolService Extension**: Added `getOrAnalyzeForSnapshot()` public export that returns raw `{ graph, inference, truncation }` for serialization purposes.
+
+### Docs
+
+- Updated `docs/internal/brain-storming.md`: Replaced placeholder text in Potential 2 (Regression Detection) with implementation summary. Added v1.0.0 updates to Potential 4 (Batch Audit for CI) and Potential 6 (Cross-Project Consistency). Added new Potential 7 (CI Pipeline Integration). Removed "Regression Detection" from Section 7.4 remaining weaknesses.
+
+### Chores
+
+- Registered 2 new tool schemas in `tool-schemas.ts`
+- Registered 2 new tool handlers in `index.ts` (imports, tool definitions, switch/case)
+- Added `serialized-graph.ts` to `domain/types/index.ts` barrel
+- Bumped version to 0.3.0
+
 ## v0.2.0 (2026-05-14)
 
 ### Features

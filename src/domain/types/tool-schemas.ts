@@ -277,4 +277,48 @@ export const TOOL_INPUT_SCHEMAS = {
     required: ['filePath'],
   },
 
+  // ─── v1.0.0: Regression Detection Tools ──────────────────────
+
+  snapshot_layout_graph: {
+    type: 'object',
+    properties: {
+      filePath: {
+        type: 'string',
+        description: '[Serialization] Absolute path to the .tsx/.jsx file to snapshot',
+      },
+      snapshotName: {
+        type: 'string',
+        description: 'Optional custom name for the snapshot file (e.g., "dashboard-v2"). If omitted, derived from the file path.',
+      },
+      maxFiles: {
+        type: 'number',
+        description: 'Maximum number of files to parse before truncating. Default: 20.',
+      },
+      maxFileSizeKB: {
+        type: 'number',
+        description: 'Skip files larger than this size in KB. Default: 500.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Timeout in milliseconds. Default: 10000.',
+      },
+    },
+    required: ['filePath'],
+  },
+
+  diff_layout_graphs: {
+    type: 'object',
+    properties: {
+      before: {
+        type: 'string',
+        description: '[Serialization] Path to the "before" snapshot JSON file (e.g., ".rhizome/dashboard-screen.json")',
+      },
+      after: {
+        type: 'string',
+        description: '[Serialization] Path to the "after" snapshot JSON file (e.g., ".rhizome/dashboard-screen.json")',
+      },
+    },
+    required: ['before', 'after'],
+  },
+
 } as const;

@@ -10,3 +10,4 @@ export * from './render-traps.js';
 export * from './shared-values.js';
 export * from './tool-schemas.js';
 export * from './context.js';
+export * from './serialized-graph.js';
