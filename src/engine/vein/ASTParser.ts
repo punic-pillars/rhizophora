@@ -7,6 +7,8 @@
 //   JSX helpers moved to JSXHelpers.ts.
 //   Import resolution moved to ImportResolver.ts.
 //   Types moved to types.ts.
+// v1.1.0 "Performance Guards" — Added file size guard to
+//   skip files larger than maxFileSizeKB.
 // ============================================================
 
 import * as fs from 'fs';
@@ -24,10 +26,23 @@ const PARSE_OPTIONS = {
   errorOnUnknownASTType: false,
 };
 
+/** Default maximum file size in KB (500 KB) */
+export const DEFAULT_MAX_FILE_SIZE_KB = 500;
+
 /**
  * Parse a .tsx/.ts file into an AST with extracted metadata.
+ * Skips files larger than maxFileSizeKB.
+ *
+ * @throws If the file exceeds maxFileSizeKB, throws with [SKIPPED] prefix.
  */
-export function parseFile(filePath: string): ParsedFile {
+export function parseFile(filePath: string, maxFileSizeKB: number = DEFAULT_MAX_FILE_SIZE_KB): ParsedFile {
+  const stats = fs.statSync(filePath);
+  const fileSizeKB = stats.size / 1024;
+
+  if (fileSizeKB > maxFileSizeKB) {
+    throw new Error(`[SKIPPED] File exceeds size limit: ${filePath} (${fileSizeKB.toFixed(0)}KB > ${maxFileSizeKB}KB)`);
+  }
+
   const source = fs.readFileSync(filePath, 'utf-8');
   const ast = parse(source, {
     ...PARSE_OPTIONS,
@@ -46,6 +61,7 @@ export function parseFile(filePath: string): ParsedFile {
 
 /**
  * Parse source text directly (for cross-file resolution).
+ * No file size check needed — this is for in-memory parsing.
  */
 export function parseSource(source: string, virtualPath: string = 'file.tsx'): TSESTree.Program {
   return parse(source, {

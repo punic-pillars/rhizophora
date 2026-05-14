@@ -43,6 +43,18 @@ export const TOOL_INPUT_SCHEMAS = {
         description: 'If true and filePath is a directory, recursively scan all .tsx/.ts files in the directory (Batch Audit mode).',
         default: false,
       },
+      maxFiles: {
+        type: 'number',
+        description: 'Maximum number of files to parse before truncating. Default: 20.',
+      },
+      maxFileSizeKB: {
+        type: 'number',
+        description: 'Skip files larger than this size in KB. Default: 500.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Timeout in milliseconds. Default: 10000.',
+      },
     },
     required: ['filePath'],
   },
@@ -89,6 +101,18 @@ export const TOOL_INPUT_SCHEMAS = {
         type: 'string',
         description: '[Vein-Powered AST] Absolute path to the .tsx/.jsx file to analyze',
       },
+      maxFiles: {
+        type: 'number',
+        description: 'Maximum number of files to parse before truncating. Default: 20.',
+      },
+      maxFileSizeKB: {
+        type: 'number',
+        description: 'Skip files larger than this size in KB. Default: 500.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Timeout in milliseconds. Default: 10000.',
+      },
     },
     required: ['filePath'],
   },
@@ -99,6 +123,18 @@ export const TOOL_INPUT_SCHEMAS = {
       filePath: {
         type: 'string',
         description: '[Vein-Powered AST] Absolute path to the .tsx/.jsx file to profile',
+      },
+      maxFiles: {
+        type: 'number',
+        description: 'Maximum number of files to parse before truncating. Default: 20.',
+      },
+      maxFileSizeKB: {
+        type: 'number',
+        description: 'Skip files larger than this size in KB. Default: 500.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Timeout in milliseconds. Default: 10000.',
       },
     },
     required: ['filePath'],
@@ -131,6 +167,18 @@ export const TOOL_INPUT_SCHEMAS = {
         items: { type: 'number' },
         description: 'Array of valid design token values (e.g., [4, 8, 12, 16, 24, 32]). Defaults to [4, 8, 12, 16, 24, 32] if not provided.',
       },
+      maxFiles: {
+        type: 'number',
+        description: 'Maximum number of files to parse before truncating. Default: 20.',
+      },
+      maxFileSizeKB: {
+        type: 'number',
+        description: 'Skip files larger than this size in KB. Default: 500.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Timeout in milliseconds. Default: 10000.',
+      },
     },
     required: ['filePath'],
   },
@@ -142,6 +190,18 @@ export const TOOL_INPUT_SCHEMAS = {
         type: 'string',
         description: '[Vein-Powered AST] Absolute path to the .tsx/.jsx file to scan for nested lists',
       },
+      maxFiles: {
+        type: 'number',
+        description: 'Maximum number of files to parse before truncating. Default: 20.',
+      },
+      maxFileSizeKB: {
+        type: 'number',
+        description: 'Skip files larger than this size in KB. Default: 500.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Timeout in milliseconds. Default: 10000.',
+      },
     },
     required: ['filePath'],
   },
@@ -152,6 +212,18 @@ export const TOOL_INPUT_SCHEMAS = {
       filePath: {
         type: 'string',
         description: '[Vein-Powered AST] Absolute path to the .tsx/.jsx file to scan for absolute overlaps',
+      },
+      maxFiles: {
+        type: 'number',
+        description: 'Maximum number of files to parse before truncating. Default: 20.',
+      },
+      maxFileSizeKB: {
+        type: 'number',
+        description: 'Skip files larger than this size in KB. Default: 500.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Timeout in milliseconds. Default: 10000.',
       },
     },
     required: ['filePath'],
@@ -166,6 +238,18 @@ export const TOOL_INPUT_SCHEMAS = {
         type: 'string',
         description: '[Rhythm Hierarch v2.0] Absolute path to the .tsx/.jsx file to audit for contextual gap violations (Intra/Inter section rules) and boundary rule violations',
       },
+      maxFiles: {
+        type: 'number',
+        description: 'Maximum number of files to parse before truncating. Default: 20.',
+      },
+      maxFileSizeKB: {
+        type: 'number',
+        description: 'Skip files larger than this size in KB. Default: 500.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Timeout in milliseconds. Default: 10000.',
+      },
     },
     required: ['filePath'],
   },
@@ -176,6 +260,18 @@ export const TOOL_INPUT_SCHEMAS = {
       filePath: {
         type: 'string',
         description: '[Semantic Proximity v2.0] Absolute path to the .tsx/.jsx file to audit for semantic scoring (Lexical 40% + Prop DNA 30% + Visual 30%) and Rule of Three grouping suggestions',
+      },
+      maxFiles: {
+        type: 'number',
+        description: 'Maximum number of files to parse before truncating. Default: 20.',
+      },
+      maxFileSizeKB: {
+        type: 'number',
+        description: 'Skip files larger than this size in KB. Default: 500.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Timeout in milliseconds. Default: 10000.',
       },
     },
     required: ['filePath'],

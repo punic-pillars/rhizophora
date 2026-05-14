@@ -35,6 +35,8 @@ In nature, a rhizome is a hidden network that dictates where the plant can grow.
 
 ## Tools (13 total)
 
+> **Performance Guards (v0.2.0):** All Vein-powered tools (marked **[Vein-Powered AST]**) accept optional `maxFiles` (default 20), `maxFileSizeKB` (default 500), and `timeoutMs` (default 10000) to prevent runaway analysis on large codebases. When limits are hit, the analysis degrades gracefully with a truncation notice rather than failing.
+
 ### Phase 1: Guardians -- Catch Pollution & Performance Bugs
 
 | Tool | What it does |

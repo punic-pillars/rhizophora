@@ -36,6 +36,7 @@ export class BoundaryGapDetector {
     
     // Pass the mode through to VeinAnalysisService for proper filtering
     return runVeinAnalysis(filePath, {
+      filePath,
       designTokens: this.options.designTokens,
       mode: activeMode,
     });
@@ -58,7 +59,7 @@ export class BoundaryGapDetector {
     const files = this.collectTsxFiles(dirPath);
     for (const file of files) {
       try {
-        const report = runVeinAnalysis(file, { designTokens: this.options.designTokens });
+        const report = runVeinAnalysis(file, { filePath: file, designTokens: this.options.designTokens });
         results.push({
           file,
           gapCount: report.gaps.length,

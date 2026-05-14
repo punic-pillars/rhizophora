@@ -12,6 +12,7 @@
 //   Removed dead handleStandardDetection and handleVeinPropagation
 //   functions in favor of unified handleModeAwareDetection.
 // Phase D: Standardized to use shared ToolResponse pattern.
+// v1.2.0: Uses AnalysisContext for single-file analysis.
 // ============================================================
 
 import * as fs from 'fs';
@@ -21,44 +22,44 @@ import { runVeinAnalysis } from '../engine/services/VeinAnalysisService.js';
 import { validateFilePath } from '../utils/validateFilePath.js';
 import { success, error, type ToolResponse } from './shared.js';
 import type { BoundaryGapReport } from '../domain/types/index.js';
+import type { AnalysisContext } from '../domain/types/context.js';
 
 type GapMode = 'all' | 'vein-propagation';
 
 
-export function handleDetectBoundaryGaps(args: {
-  filePath: string;
-  mode?: GapMode;
-  stylesPath?: string;
-  designTokens?: number[];
-  recursive?: boolean;
-}): ToolResponse {
+export function handleDetectBoundaryGaps(args: Record<string, unknown>): ToolResponse {
   try {
-    const mode = args.mode ?? 'all';
-    const designTokens = args.designTokens;
-    const recursive = args.recursive ?? false;
+    const mode = (args.mode as GapMode) ?? 'all';
+    const designTokens = args.designTokens as number[] | undefined;
+    const recursive = (args.recursive as boolean) ?? false;
 
     // Validate file existence for single-file modes
-    if (!fs.existsSync(args.filePath)) {
+    if (!fs.existsSync(args.filePath as string)) {
       throw new Error(`File not found: "${args.filePath}". Please provide a valid file path.`);
     }
 
     // Check if filePath is a directory (batch audit mode)
-    const isDirectory = fs.statSync(args.filePath).isDirectory();
+    const isDirectory = fs.statSync(args.filePath as string).isDirectory();
 
     if (isDirectory || recursive) {
-      return handleBatchAudit(args.filePath, mode, designTokens);
+      return handleBatchAudit(args.filePath as string, mode, designTokens);
     }
 
     // Single file mode — validate extension
-    validateFilePath(args.filePath);
+    validateFilePath(args.filePath as string);
 
-    const report = runVeinAnalysis(args.filePath, {
-      designTokens,
-      mode: mode as 'all' | 'vein-propagation',
-    });
+    const ctx: AnalysisContext = { filePath: args.filePath as string };
+    if (args.designTokens !== undefined) ctx.designTokens = args.designTokens as number[];
+    if (args.mode !== undefined) ctx.mode = args.mode as 'all' | 'vein-propagation';
+    if (args.stylesPath !== undefined) ctx.stylesPath = args.stylesPath as string;
+    if (args.recursive !== undefined) ctx.recursive = args.recursive as boolean;
+    if (args.maxFiles !== undefined) ctx.maxFiles = args.maxFiles as number;
+    if (args.maxFileSizeKB !== undefined) ctx.maxFileSizeKB = args.maxFileSizeKB as number;
+    if (args.timeoutMs !== undefined) ctx.timeoutMs = args.timeoutMs as number;
 
+    const report = runVeinAnalysis(ctx.filePath, ctx);
 
-    return formatModeAwareOutput(report, args.filePath, mode);
+    return formatModeAwareOutput(report, ctx.filePath, mode);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return error(`Error detecting boundary gaps: ${message}`);

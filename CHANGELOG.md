@@ -1,6 +1,21 @@
 # Changelog
 
+## v0.2.0 (2026-05-14)
+
+### Features
+
+- **Performance Guards**: Added `maxFiles`, `maxFileSizeKB`, `timeoutMs` parameters to all 8 Vein-powered MCP tool schemas. The AST parser now hard-stops at configurable limits and gracefully degrades to a partial graph with truncation reporting.
+- **AnalysisContext**: Consolidated all cross-cutting parameters into a single `AnalysisContext` interface. Eliminated the "boilerplate corridor" where every layer independently declared the same parameters. Adding a new cross-cutting parameter is now a 1-file change.
+- **Cache key fix**: Performance parameters are now included in the analysis cache key, preventing stale truncated results from being returned when limits change.
+
+### Chores
+
+- Refactored `VeinToolService.ts` and `VeinAnalysisService.ts` to use `AnalysisContext` instead of per-function option types
+- Updated all 8 Vein-powered tool handlers to construct `AnalysisContext` internally
+- Updated `index.ts` to use a single `args as Record<string, unknown>` cast pattern
+
 ## v0.1.5 (2026-05-13)
+
 
 ### Docs
 

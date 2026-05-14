@@ -6,6 +6,11 @@
 // v1.0.0 — Initial release for 6 new Vein-powered tools
 // v2.0.0 — Upgraded rhythm/proximity audits to v2.0 contextual
 //   gap violations, boundary violations, and Rule of Three.
+// v1.1.0 "Performance Guards" — Pass truncation info through
+//   the pipeline and report it in tool output.
+// v1.2.0 "AnalysisContext" — Consolidated all cross-cutting
+//   parameters into a single AnalysisContext interface.
+//   Eliminated the PerformanceOptions type.
 // ============================================================
 
 import * as path from 'path';
@@ -19,7 +24,8 @@ import { parseFile } from '../vein/ASTParser.js';
 import { hasChildMarginPollution, hasCumulativePaddingBoundary, formatFoundationBlocker } from '../vein/FoundationCheck.js';
 import { SemanticScorer } from '../vein/SemanticScorer.js';
 import type { SemanticLayoutGraph } from '../vein/SemanticLayoutGraph.js';
-import type { InferenceResult, LayoutNode, ParsedFile, ResolvedComponent } from '../vein/types.js';
+import type { InferenceResult, LayoutNode, ParsedFile, ResolvedComponent, TruncationInfo } from '../vein/types.js';
+import type { AnalysisContext } from '../../domain/types/context.js';
 
 // ─── Cache ────────────────────────────────────────────────────
 
@@ -27,6 +33,7 @@ interface CachedAnalysis {
   graph: SemanticLayoutGraph;
   inference: InferenceResult;
   parsed: ParsedFile;
+  truncation: TruncationInfo;
 }
 
 interface CacheEntry {
@@ -43,11 +50,12 @@ const analysisCache = new Map<string, CacheEntry>();
  * @param filePath - Path to the file to analyze
  * @param designTokens - Optional design token whitelist
  * @param forceRefresh - If true, bypass cache and re-analyze from scratch
+ * @param ctx - Optional AnalysisContext with performance guards
  */
-function getOrAnalyze(filePath: string, designTokens?: number[], forceRefresh = false): CachedAnalysis {
+function getOrAnalyze(filePath: string, designTokens?: number[], forceRefresh = false, ctx?: AnalysisContext): CachedAnalysis {
   const absolutePath = path.resolve(filePath);
   const stats = fs.statSync(absolutePath);
-  const cacheKey = `${absolutePath}::${designTokens?.join(',') ?? ''}`;
+  const cacheKey = `${absolutePath}::${designTokens?.join(',') ?? ''}::${ctx?.maxFiles}::${ctx?.maxFileSizeKB}::${ctx?.timeoutMs}::${ctx?.maxDepth}`;
 
   const cached = analysisCache.get(cacheKey);
   if (!forceRefresh && cached && cached.mtimeMs === stats.mtimeMs) {
@@ -59,17 +67,21 @@ function getOrAnalyze(filePath: string, designTokens?: number[], forceRefresh = 
   const propagator = new VenousPropagator({
     designTokens,
     maxDepth: 10,
+    maxFiles: ctx?.maxFiles,
+    maxFileSizeKB: ctx?.maxFileSizeKB,
+    timeoutMs: ctx?.timeoutMs,
   });
 
   const graph = propagator.propagate(absolutePath);
+  const truncation = propagator.getTruncationInfo();
 
   const engine = new HeuristicInferenceEngine({
     designTokens,
   });
 
-  const inference = engine.analyze(graph);
+  const inference = engine.analyze(graph, truncation);
 
-  const result = { graph, inference, parsed };
+  const result = { graph, inference, parsed, truncation };
   analysisCache.set(cacheKey, { data: result, mtimeMs: stats.mtimeMs });
   return result;
 }
@@ -81,18 +93,41 @@ export function clearCache(): void {
   analysisCache.clear();
 }
 
+// ─── Helper: Format truncation header ─────────────────────────
+
+function formatTruncationHeader(truncation: TruncationInfo, filePath: string): string[] {
+  const lines: string[] = [];
+  if (truncation.truncated) {
+    lines.push(`[TRUNCATED] ${filePath} — partial analysis`);
+    lines.push(`  Files parsed: ${truncation.filesParsed}/${truncation.maxFiles}`);
+    if (truncation.filesSkippedSize > 0) {
+      lines.push(`  Files skipped (size): ${truncation.filesSkippedSize}`);
+    }
+    if (truncation.unresolvedComponents > 0) {
+      lines.push(`  Unresolved components: ${truncation.unresolvedComponents}`);
+    }
+    if (truncation.timedOut) {
+      lines.push(`  Timed out after ${truncation.elapsedMs}ms`);
+    }
+    lines.push(`  Health score is based on the resolved portion of the graph.`);
+    lines.push('');
+  }
+  return lines;
+}
+
 // ─── Tool Queries ─────────────────────────────────────────────
 
 /**
  * Get the full component tree as an ASCII diagram with annotations.
  */
-export function getComponentTree(filePath: string): string {
-  const { graph, inference } = getOrAnalyze(filePath);
+export function getComponentTree(ctx: AnalysisContext): string {
+  const { graph, inference, truncation } = getOrAnalyze(ctx.filePath, undefined, false, ctx);
   const engine = new HeuristicInferenceEngine();
   const tree = engine.renderAscii(graph);
   const lines: string[] = [];
-  lines.push(`[COMPONENT-TREE] ${filePath}`);
+  lines.push(`[COMPONENT-TREE] ${ctx.filePath}`);
   lines.push('');
+  lines.push(...formatTruncationHeader(truncation, ctx.filePath));
   lines.push(tree);
   lines.push('');
   lines.push(`Health Score: ${inference.healthScore}/100`);
@@ -102,8 +137,8 @@ export function getComponentTree(filePath: string): string {
 /**
  * Get a screen complexity profile (BOM).
  */
-export function getScreenProfile(filePath: string): string {
-  const { graph, inference } = getOrAnalyze(filePath);
+export function getScreenProfile(ctx: AnalysisContext): string {
+  const { graph, inference, truncation } = getOrAnalyze(ctx.filePath, undefined, false, ctx);
   const allNodes = graph.getAllNodes();
   const containers = graph.getContainerNodes();
   const leaves = graph.getLeafNodes();
@@ -116,8 +151,9 @@ export function getScreenProfile(filePath: string): string {
   const maxDepth = root ? Math.max(...allNodes.map((n) => graph.getDepth(n.id))) : 0;
 
   const lines: string[] = [];
-  lines.push(`[SCREEN-PROFILE] ${filePath}`);
+  lines.push(`[SCREEN-PROFILE] ${ctx.filePath}`);
   lines.push('');
+  lines.push(...formatTruncationHeader(truncation, ctx.filePath));
   lines.push(`  Total components: ${allNodes.length}`);
   lines.push(`  Unique custom components: ${customComponents.length}`);
   lines.push(`  Max nesting depth: ${maxDepth}`);
@@ -145,8 +181,8 @@ export function getScreenProfile(filePath: string): string {
 /**
  * Trace a component's import chain from usage to source definition.
  */
-export function getImportChain(filePath: string, componentName?: string): string {
-  const { parsed } = getOrAnalyze(filePath);
+export function getImportChain(ctx: AnalysisContext): string {
+  const { parsed } = getOrAnalyze(ctx.filePath);
   const fileCache = new Map<string, ParsedFile>();
   fileCache.set(parsed.filePath, parsed);
   const resolver = new ComponentResolver(fileCache);
@@ -154,14 +190,14 @@ export function getImportChain(filePath: string, componentName?: string): string
   const firstExport = parsed.exportedComponents.size > 0
     ? parsed.exportedComponents.values().next().value
     : null;
-  const targetName = componentName || (firstExport?.name ?? null);
+  const targetName = ctx.componentName || (firstExport?.name ?? null);
 
   if (!targetName) {
-    return `[IMPORT-CHAIN] ${filePath}\n  No components found in file.`;
+    return `[IMPORT-CHAIN] ${ctx.filePath}\n  No components found in file.`;
   }
 
   const lines: string[] = [];
-  lines.push(`[IMPORT-CHAIN] ${targetName} in ${filePath}`);
+  lines.push(`[IMPORT-CHAIN] ${targetName} in ${ctx.filePath}`);
   lines.push('');
 
   const visited = new Set<string>();
@@ -228,14 +264,15 @@ export function getImportChain(filePath: string, componentName?: string): string
 /**
  * Scan a file for spacing values not in the design token whitelist.
  */
-export function getTokenDeviations(filePath: string, designTokens?: number[]): string {
-  const { graph } = getOrAnalyze(filePath, designTokens);
-  const tokens = designTokens ?? DEFAULT_DESIGN_TOKENS;
+export function getTokenDeviations(ctx: AnalysisContext): string {
+  const { graph, truncation } = getOrAnalyze(ctx.filePath, ctx.designTokens, false, ctx);
+  const tokens = ctx.designTokens ?? DEFAULT_DESIGN_TOKENS;
   const detector = new TokenDeviationDetector(tokens);
   const deviations = detector.detect(graph);
 
   const lines: string[] = [];
-  lines.push(`[TOKEN-DEVIATIONS] ${filePath}`);
+  lines.push(`[TOKEN-DEVIATIONS] ${ctx.filePath}`);
+  lines.push(...formatTruncationHeader(truncation, ctx.filePath));
   lines.push(`  Design tokens: [${tokens.join(', ')}]`);
 
   if (deviations.length === 0) {
@@ -254,8 +291,8 @@ export function getTokenDeviations(filePath: string, designTokens?: number[]): s
 /**
  * Find .map() inside .map() — nested list anti-pattern.
  */
-export function getNestedLists(filePath: string): string {
-  const { graph } = getOrAnalyze(filePath);
+export function getNestedLists(ctx: AnalysisContext): string {
+  const { graph, truncation } = getOrAnalyze(ctx.filePath, undefined, false, ctx);
   const allNodes = graph.getAllNodes();
   const listItems = allNodes.filter((n) => n.isListItem);
 
@@ -269,7 +306,8 @@ export function getNestedLists(filePath: string): string {
   }
 
   const lines: string[] = [];
-  lines.push(`[NESTED-LISTS] ${filePath}`);
+  lines.push(`[NESTED-LISTS] ${ctx.filePath}`);
+  lines.push(...formatTruncationHeader(truncation, ctx.filePath));
 
   if (nested.length === 0) {
     lines.push('  [CLEAN] No nested .map() calls detected.');
@@ -298,8 +336,8 @@ export function getNestedLists(filePath: string): string {
  *   - Inter-Section (Score < 4): Target 16px, flag if < 16px
  *   - Boundary Rule: Last child must have zero marginBottom
  */
-export function getRhythmAudit(filePath: string): string {
-  const { graph } = getOrAnalyze(filePath);
+export function getRhythmAudit(ctx: AnalysisContext): string {
+  const { graph, truncation } = getOrAnalyze(ctx.filePath, undefined, false, ctx);
   const analyzer = new GraphAnalyzer();
 
   // v2.0.0: Contextual gap violations
@@ -312,7 +350,8 @@ export function getRhythmAudit(filePath: string): string {
   const terminalPaddingViolations = analyzer.findTerminalPaddingViolations(graph);
 
   const lines: string[] = [];
-  lines.push(`[RHYTHM-AUDIT v2.3.0] ${filePath}`);
+  lines.push(`[RHYTHM-AUDIT v2.3.0] ${ctx.filePath}`);
+  lines.push(...formatTruncationHeader(truncation, ctx.filePath));
   lines.push(`  Rule: Dynamic Rhythm Hierarch — Intra-section tight (8px), Inter-section wide (16px), Boundary flush (0px)`);
   lines.push('');
 
@@ -507,8 +546,8 @@ export function getRhythmAudit(filePath: string): string {
  *   - Rule of Three grouping suggestions
  *   - Foundation Check blocking
  */
-export function getProximityAudit(filePath: string): string {
-  const { graph } = getOrAnalyze(filePath);
+export function getProximityAudit(ctx: AnalysisContext): string {
+  const { graph, truncation } = getOrAnalyze(ctx.filePath, undefined, false, ctx);
   const analyzer = new GraphAnalyzer();
   const scorer = new SemanticScorer();
 
@@ -524,7 +563,8 @@ export function getProximityAudit(filePath: string): string {
   const groupingSuggestions = analyzer.findGroupingSuggestions(graph, pollutedContainers);
 
   const lines: string[] = [];
-  lines.push(`[PROXIMITY-AUDIT v2.0] ${filePath}`);
+  lines.push(`[PROXIMITY-AUDIT v2.0] ${ctx.filePath}`);
+  lines.push(...formatTruncationHeader(truncation, ctx.filePath));
   lines.push(`  Rule: Semantic Scoring (Lexical 40% + Prop DNA 30% + Visual 30%) + Rule of Three`);
   lines.push('');
 
@@ -640,13 +680,14 @@ export function getProximityAudit(filePath: string): string {
   return lines.join('\n');
 }
 
-export function getAbsoluteOverlaps(filePath: string): string {
-  const { graph } = getOrAnalyze(filePath);
+export function getAbsoluteOverlaps(ctx: AnalysisContext): string {
+  const { graph, truncation } = getOrAnalyze(ctx.filePath, undefined, false, ctx);
   const allNodes = graph.getAllNodes();
   const absoluteNodes = allNodes.filter((n) => n.layout.position === 'absolute');
 
   const lines: string[] = [];
-  lines.push(`[ABSOLUTE-OVERLAPS] ${filePath}`);
+  lines.push(`[ABSOLUTE-OVERLAPS] ${ctx.filePath}`);
+  lines.push(...formatTruncationHeader(truncation, ctx.filePath));
 
   if (absoluteNodes.length === 0) {
     lines.push('  [CLEAN] No absolutely-positioned elements found.');

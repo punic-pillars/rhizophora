@@ -5,6 +5,8 @@
 // and constant resolution for design tokens.
 //
 // v1.0.0 "Refactored Vein" — Extracted from VenousPropagator.ts
+// v1.1.0 "Performance Guards" — Skip files with zero exported
+//   components to avoid parsing utility files unnecessarily.
 // ============================================================
 
 import * as fs from 'fs';
@@ -61,6 +63,9 @@ export class ComponentResolver {
 
         const resolvedParsed = this.parseFileWithCache(importInfo.resolvedPath);
         if (!resolvedParsed) continue;
+
+        // v1.1.0: Skip files with zero exported components (utility files)
+        if (resolvedParsed.exportedComponents.size === 0) continue;
 
         if (isNamedMatch || isDefaultMatch) {
           const resolvedComponent = resolvedParsed.exportedComponents.get(tagName);
@@ -119,7 +124,7 @@ export class ComponentResolver {
       const uniqueFiles = new Set(candidates.map((c) => c.filePath));
       if (uniqueFiles.size > 1) {
         console.warn(
-          `[ComponentResolver] ⚠️ Ambiguous re-export for "${tagName}": ` +
+          `[ComponentResolver] Ambiguous re-export for "${tagName}": ` +
           `resolved to ${candidates.length} different files ` +
           `(${[...uniqueFiles].join(', ')}). ` +
           `Using first candidate from "${candidates[0].source}".`
@@ -163,6 +168,9 @@ export class ComponentResolver {
       const resolvedParsed = this.parseFileWithCache(reExport.resolvedPath);
       if (!resolvedParsed) continue;
 
+      // v1.1.0: Skip files with zero exported components (utility files)
+      if (resolvedParsed.exportedComponents.size === 0) continue;
+
       if (reExport.isWildcard) {
         const exactMatch = resolvedParsed.exportedComponents.get(tagName);
         if (exactMatch && exactMatch.name === tagName) return exactMatch;
@@ -205,6 +213,9 @@ export class ComponentResolver {
   private resolveComponentDef(tagName: string, filePath: string): ResolvedComponent | null {
     const parsed = this.parseFileWithCache(filePath);
     if (!parsed) return null;
+
+    // v1.1.0: Skip files with zero exported components
+    if (parsed.exportedComponents.size === 0) return null;
 
     // Check exported components by tagName
     const def = parsed.exportedComponents.get(tagName);

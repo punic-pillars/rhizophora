@@ -13,6 +13,8 @@
 //   - Boundary rule violations (last child marginBottom)
 //   - Rule of Three grouping suggestions
 //   - Updated health score formula
+// v1.1.0 "Performance Guards" — Accept truncation info and
+//   include it in the InferenceResult.
 // ============================================================
 
 import { SemanticLayoutGraph } from './SemanticLayoutGraph.js';
@@ -34,6 +36,7 @@ import type {
   BoundaryViolation,
   GroupingSuggestion,
   TerminalPaddingViolation,
+  TruncationInfo,
 } from './types.js';
 
 // ─── Engine ───────────────────────────────────────────────────
@@ -63,8 +66,9 @@ export class HeuristicInferenceEngine {
 
   /**
    * Analyze the graph and produce inference results.
+   * Optionally accepts truncation info from the propagator.
    */
-  analyze(graph: SemanticLayoutGraph): InferenceResult {
+  analyze(graph: SemanticLayoutGraph, truncation?: TruncationInfo): InferenceResult {
     const gapOpportunities = this.detectGapOpportunities(graph);
     const stylePollution = this.detectStylePollution(graph);
     const marginStacking = this.detectMarginStacking(graph);
@@ -158,6 +162,7 @@ export class HeuristicInferenceEngine {
       groupingSuggestions,
       terminalPaddingViolations,
       healthScore,
+      truncation,
     };
   }
 
@@ -169,6 +174,23 @@ export class HeuristicInferenceEngine {
 
     lines.push(`[REPORT] Vein Propagation Report`);
     lines.push(`  Health Score: ${result.healthScore}/100`);
+
+    // v1.1.0: Truncation info
+    if (result.truncation?.truncated) {
+      const t = result.truncation;
+      lines.push(`  [TRUNCATED] Partial analysis — ${t.filesParsed}/${t.maxFiles} files parsed`);
+      if (t.filesSkippedSize > 0) {
+        lines.push(`  [TRUNCATED] ${t.filesSkippedSize} file(s) skipped (size limit)`);
+      }
+      if (t.unresolvedComponents > 0) {
+        lines.push(`  [TRUNCATED] ${t.unresolvedComponents} component(s) not resolved`);
+      }
+      if (t.timedOut) {
+        lines.push(`  [TRUNCATED] Analysis timed out after ${t.elapsedMs}ms`);
+      }
+      lines.push('');
+    }
+
     lines.push('');
 
     if (result.gapOpportunities.length > 0) {

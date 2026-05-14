@@ -1,6 +1,6 @@
 # Rhizophora Developer Reference
 
-**v0.1.0 — Architecture & Design Reference**
+**v0.2.0 — Architecture & Design Reference**
 
 This document is the authoritative reference for the Rhizophora MCP server codebase. It covers the complete file tree, design patterns, module architecture, coding conventions, and rules.
 
@@ -174,7 +174,7 @@ rhizophora/
 │   │   │   │                             #   runVeinAnalysisRaw() returns raw graph + inference.
 │   │   │   │                             #   generateVeinReport() returns ASCII tree + summary.
 │   │   │   │                             #   Legacy — used by detect_boundary_gaps tool.
-│   │   │   └── VeinToolService.ts        # Shared cache + query methods (423 lines).
+│   │   │   └── VeinToolService.ts        # Shared cache + query methods (722 lines).
 │   │   │                                 #   Runs Vein Propagation once per file, caches the
 │   │   │                                 #   SemanticLayoutGraph + InferenceResult + ParsedFile.
 │   │   │                                 #   Provides: getComponentTree(), getScreenProfile(),
@@ -184,6 +184,8 @@ rhizophora/
 │   │   │                                 #   getRhythmAudit() and getProximityAudit() include
 │   │   │                                 #   Foundation Check integration — they filter out
 │   │   │                                 #   polluted branches and emit HIGH severity blockers.
+│   │   │                                 #   v1.2.0: All functions accept AnalysisContext
+│   │   │                                 #   instead of per-function option types.
 │   │   │
 │   │   ├── utils/
 │   │   │   ├── SourceLocationUtils.ts    # Source location utilities

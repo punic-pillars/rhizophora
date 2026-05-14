@@ -7,6 +7,8 @@
 // v1.0.0 "Refactored Vein" — Extracted from ASTParser.ts,
 //   SemanticLayoutGraph.ts, and HeuristicInferenceEngine.ts
 //   into a single shared types file.
+// v1.1.0 "Performance Guards" — Added TruncationInfo for
+//   reporting partial analysis results.
 // ============================================================
 
 import type { TSESTree } from '@typescript-eslint/typescript-estree';
@@ -113,6 +115,29 @@ export interface TokenDeviation {
   suggestion: string;
 }
 
+// ─── Truncation Info (v1.1.0) ─────────────────────────────────
+
+/**
+ * v1.1.0: Reports why analysis was truncated (partial results).
+ * Added for performance guards — maxFiles, file size, timeout.
+ */
+export interface TruncationInfo {
+  /** True if analysis did not complete fully */
+  truncated: boolean;
+  /** Number of files parsed before hitting the limit */
+  filesParsed: number;
+  /** Maximum files allowed */
+  maxFiles: number;
+  /** Number of files skipped due to size */
+  filesSkippedSize: number;
+  /** Number of components that could not be resolved */
+  unresolvedComponents: number;
+  /** True if analysis timed out */
+  timedOut: boolean;
+  /** Elapsed time in ms */
+  elapsedMs: number;
+}
+
 // ─── Inference Types ──────────────────────────────────────────
 
 export interface InferenceResult {
@@ -132,6 +157,8 @@ export interface InferenceResult {
   /** v2.3.0: Terminal padding violations (last child redundant padding) */
   terminalPaddingViolations: TerminalPaddingViolation[];
   healthScore: number;
+  /** v1.1.0: Truncation info for partial analysis */
+  truncation?: TruncationInfo;
 }
 
 export interface GapOpportunity {

@@ -1,6 +1,6 @@
 {
   "name": "rhizophora",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "MCP server for React Native spatial integrity and layout audit. Provides Ground Truth for your component tree by detecting margin pollution, token deviations, bridge crossings, and render traps. 13 tools for structural analysis, layout auditing, performance profiling, and semantic orchestration.",
   "keywords": [
     "mcp-server",

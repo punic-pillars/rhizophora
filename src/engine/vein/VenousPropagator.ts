@@ -9,10 +9,13 @@
 //   Component resolution → ComponentResolver
 //   Slot detection → SlotDetector
 //   JSX helpers → JSXHelpers
+// v1.1.0 "Performance Guards" — Added maxFiles limit, timeout
+//   guard, and file size guard integration.
 // ============================================================
 
 import * as path from 'path';
-import { parseFile } from './ASTParser.js';
+import * as fs from 'fs';
+import { parseFile, DEFAULT_MAX_FILE_SIZE_KB } from './ASTParser.js';
 import { extractStyle } from './StyleExtractor.js';
 import { detectSlot } from './SlotDetector.js';
 import { ComponentResolver } from './ComponentResolver.js';
@@ -25,7 +28,7 @@ import {
 import { SemanticLayoutGraph } from './SemanticLayoutGraph.js';
 import { KNOWN_LEAF_PRIMITIVES, RN_ANIMATED_PRIMITIVES } from '../../constants.js';
 import type { TSESTree } from '@typescript-eslint/typescript-estree';
-import type { ParsedFile, ResolvedComponent } from './types.js';
+import type { ParsedFile, ResolvedComponent, TruncationInfo } from './types.js';
 
 type JSXElement = TSESTree.JSXElement;
 type JSXFragment = TSESTree.JSXFragment;
@@ -46,6 +49,21 @@ export interface PropagationOptions {
   maxDepth?: number;
   /** Files already visited (prevents circular imports) */
   visitedFiles?: Set<string>;
+  /**
+   * v1.1.0: Maximum number of files to parse before truncating.
+   * Prevents hangs on projects with deep import chains. Default: 20.
+   */
+  maxFiles?: number;
+  /**
+   * v1.1.0: Maximum file size in KB. Files larger than this are skipped.
+   * Default: 500 KB.
+   */
+  maxFileSizeKB?: number;
+  /**
+   * v1.1.0: Timeout in milliseconds. Analysis stops after this duration.
+   * Default: 10000 (10 seconds).
+   */
+  timeoutMs?: number;
 }
 
 // ─── Propagator ───────────────────────────────────────────────
@@ -56,6 +74,12 @@ export class VenousPropagator {
   private fileCache: Map<string, ParsedFile>;
   private componentResolver: ComponentResolver;
 
+  // v1.1.0: Performance tracking
+  private filesParsed: number = 0;
+  private filesSkippedSize: number = 0;
+  private unresolvedComponents: number = 0;
+  private startTime: number = 0;
+
   constructor(options: PropagationOptions = {}) {
     this.graph = new SemanticLayoutGraph();
     this.fileCache = new Map();
@@ -64,6 +88,9 @@ export class VenousPropagator {
       designTokens: options.designTokens ?? [],
       maxDepth: options.maxDepth ?? 10,
       visitedFiles: options.visitedFiles ?? new Set(),
+      maxFiles: options.maxFiles ?? 20,
+      maxFileSizeKB: options.maxFileSizeKB ?? DEFAULT_MAX_FILE_SIZE_KB,
+      timeoutMs: options.timeoutMs ?? 10000,
     };
   }
 
@@ -73,6 +100,10 @@ export class VenousPropagator {
   propagate(filePath: string): SemanticLayoutGraph {
     this.graph = new SemanticLayoutGraph();
     this.options.visitedFiles = new Set();
+    this.filesParsed = 0;
+    this.filesSkippedSize = 0;
+    this.unresolvedComponents = 0;
+    this.startTime = Date.now();
 
     const absolutePath = path.resolve(filePath);
     const parsed = this.parseFileWithCache(absolutePath);
@@ -86,6 +117,32 @@ export class VenousPropagator {
     this.walkComponent(rootComponent, null, parsed, 0, rootLineNumber);
 
     return this.graph;
+  }
+
+  /**
+   * v1.1.0: Get truncation info for the last propagation run.
+   */
+  getTruncationInfo(): TruncationInfo {
+    const elapsedMs = Date.now() - this.startTime;
+    const maxFiles = this.options.maxFiles;
+    return {
+      truncated: this.filesParsed >= maxFiles || this.filesSkippedSize > 0 || this.unresolvedComponents > 0,
+      filesParsed: this.filesParsed,
+      maxFiles,
+      filesSkippedSize: this.filesSkippedSize,
+      unresolvedComponents: this.unresolvedComponents,
+      timedOut: elapsedMs >= this.options.timeoutMs,
+      elapsedMs,
+    };
+  }
+
+  /**
+   * v1.1.0: Check if any performance limit has been hit.
+   */
+  private isLimitHit(): boolean {
+    if (this.filesParsed >= this.options.maxFiles) return true;
+    if (Date.now() - this.startTime >= this.options.timeoutMs) return true;
+    return false;
   }
 
   /**
@@ -170,6 +227,12 @@ export class VenousPropagator {
 
     // If custom component, resolve and walk into it
     if (isCustom) {
+      // v1.1.0: Check performance limits before resolving
+      if (this.isLimitHit()) {
+        this.unresolvedComponents++;
+        return;
+      }
+
       const resolved = this.componentResolver.resolveComponent(
         tagName,
         parsed,
@@ -248,11 +311,23 @@ export class VenousPropagator {
 
   private parseFileWithCache(filePath: string): ParsedFile | null {
     if (this.fileCache.has(filePath)) return this.fileCache.get(filePath)!;
+
+    // v1.1.0: Check performance limits before parsing
+    if (this.isLimitHit()) {
+      return null;
+    }
+
     try {
-      const parsed = parseFile(filePath);
+      const parsed = parseFile(filePath, this.options.maxFileSizeKB);
+      this.filesParsed++;
       this.fileCache.set(filePath, parsed);
       return parsed;
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // v1.1.0: Track files skipped due to size
+      if (message.startsWith('[SKIPPED]')) {
+        this.filesSkippedSize++;
+      }
       return null;
     }
   }

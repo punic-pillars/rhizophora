@@ -5,6 +5,9 @@
 //
 // v0.6.0 "Vein Propagation" — Replaces all regex-based
 //   boundary gap detection with AST-driven analysis.
+// v1.2.0 "AnalysisContext" — Consolidated all cross-cutting
+//   parameters into a single AnalysisContext interface.
+//   Eliminated the VeinAnalysisOptions type.
 // ============================================================
 
 import * as path from 'path';
@@ -14,21 +17,9 @@ import { SemanticLayoutGraph } from '../vein/SemanticLayoutGraph.js';
 import type { InferenceResult } from '../vein/types.js';
 import { hasCumulativePaddingBoundary } from '../vein/FoundationCheck.js';
 import { BoundaryGap, BoundaryGapReport } from '../../domain/types/index.js';
+import type { AnalysisContext } from '../../domain/types/context.js';
 
 // ─── Service ─────────────────────────────────────────────────
-
-export interface VeinAnalysisOptions {
-  designTokens?: number[];
-  maxDepth?: number;
-  /**
-   * v0.8.3: Mode filter for boundary gap detection.
-   * - 'all': Report all gap types (default)
-   * - 'vein-propagation': Full AST-driven analysis (same as 'all')
-   * Legacy modes (anchors, rhythm, margin-inventory, gap-validator) removed.
-   */
-  mode?: 'all' | 'vein-propagation';
-
-}
 
 /**
  * Run the full Vein Propagation analysis on a file.
@@ -37,27 +28,31 @@ export interface VeinAnalysisOptions {
  */
 export function runVeinAnalysis(
   filePath: string,
-  options: VeinAnalysisOptions = {}
+  ctx?: AnalysisContext
 ): BoundaryGapReport {
   const absolutePath = path.resolve(filePath);
 
   // Step 1: Propagate — build the Semantic Layout Graph
   const propagator = new VenousPropagator({
-    designTokens: options.designTokens,
-    maxDepth: options.maxDepth ?? 10,
+    designTokens: ctx?.designTokens,
+    maxDepth: ctx?.maxDepth ?? 10,
+    maxFiles: ctx?.maxFiles,
+    maxFileSizeKB: ctx?.maxFileSizeKB,
+    timeoutMs: ctx?.timeoutMs,
   });
 
   const graph = propagator.propagate(absolutePath);
+  const truncation = propagator.getTruncationInfo();
 
   // Step 2: Infer — analyze the graph for issues
   const engine = new HeuristicInferenceEngine({
-    designTokens: options.designTokens,
+    designTokens: ctx?.designTokens,
   });
 
-  const result = engine.analyze(graph);
+  const result = engine.analyze(graph, truncation);
 
   // Step 3: Convert to BoundaryGapReport format, filtering by mode
-  return convertToReport(absolutePath, graph, result, options.mode ?? 'all');
+  return convertToReport(absolutePath, graph, result, ctx?.mode ?? 'all');
 }
 
 /**
@@ -66,7 +61,7 @@ export function runVeinAnalysis(
  */
 export function runVeinAnalysisRaw(
   filePath: string,
-  options: VeinAnalysisOptions = {}
+  ctx?: AnalysisContext
 ): {
   graph: SemanticLayoutGraph;
   inference: InferenceResult;
@@ -74,17 +69,21 @@ export function runVeinAnalysisRaw(
   const absolutePath = path.resolve(filePath);
 
   const propagator = new VenousPropagator({
-    designTokens: options.designTokens,
-    maxDepth: options.maxDepth ?? 10,
+    designTokens: ctx?.designTokens,
+    maxDepth: ctx?.maxDepth ?? 10,
+    maxFiles: ctx?.maxFiles,
+    maxFileSizeKB: ctx?.maxFileSizeKB,
+    timeoutMs: ctx?.timeoutMs,
   });
 
   const graph = propagator.propagate(absolutePath);
+  const truncation = propagator.getTruncationInfo();
 
   const engine = new HeuristicInferenceEngine({
-    designTokens: options.designTokens,
+    designTokens: ctx?.designTokens,
   });
 
-  const inference = engine.analyze(graph);
+  const inference = engine.analyze(graph, truncation);
 
   return { graph, inference };
 }
@@ -215,22 +214,26 @@ function convertToReport(
  */
 export function generateVeinReport(
   filePath: string,
-  options: VeinAnalysisOptions = {}
+  ctx?: AnalysisContext
 ): string {
   const absolutePath = path.resolve(filePath);
 
   const propagator = new VenousPropagator({
-    designTokens: options.designTokens,
-    maxDepth: options.maxDepth ?? 10,
+    designTokens: ctx?.designTokens,
+    maxDepth: ctx?.maxDepth ?? 10,
+    maxFiles: ctx?.maxFiles,
+    maxFileSizeKB: ctx?.maxFileSizeKB,
+    timeoutMs: ctx?.timeoutMs,
   });
 
   const graph = propagator.propagate(absolutePath);
+  const truncation = propagator.getTruncationInfo();
 
   const engine = new HeuristicInferenceEngine({
-    designTokens: options.designTokens,
+    designTokens: ctx?.designTokens,
   });
 
-  const inference = engine.analyze(graph);
+  const inference = engine.analyze(graph, truncation);
 
   const lines: string[] = [];
   lines.push('[VEIN-ANALYSIS] Vein Propagation Analysis');
@@ -247,4 +250,3 @@ export function generateVeinReport(
 
   return lines.join('\n');
 }
-

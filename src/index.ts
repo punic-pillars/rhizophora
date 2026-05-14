@@ -141,7 +141,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'render_structural_diagram':
         return handleRenderStructuralDiagram(args as { filePath: string });
       case 'detect_boundary_gaps':
-        return handleDetectBoundaryGaps(args as { filePath: string; mode?: 'all' | 'vein-propagation'; stylesPath?: string; designTokens?: number[]; recursive?: boolean });
+        return handleDetectBoundaryGaps(args as Record<string, unknown>);
       case 'detect_bridge_crossings':
         return handleDetectBridgeCrossings(args as { filePath: string });
       case 'detect_render_traps':
@@ -149,25 +149,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'trace_shared_value_lineage':
         return handleTraceSharedValueLineage(args as { filePath: string });
 
-      // New Vein-powered tools
+      // New Vein-powered tools — all accept AnalysisContext via Record<string, unknown>
       case 'analyze_component_tree':
-        return handleAnalyzeComponentTree(args as { filePath: string });
+        return handleAnalyzeComponentTree(args as Record<string, unknown>);
       case 'profile_screen_complexity':
-        return handleProfileScreenComplexity(args as { filePath: string });
+        return handleProfileScreenComplexity(args as Record<string, unknown>);
       case 'trace_component_import':
-        return handleTraceComponentImport(args as { filePath: string; componentName?: string });
+        return handleTraceComponentImport(args as Record<string, unknown>);
       case 'audit_design_tokens':
-        return handleAuditDesignTokens(args as { filePath: string; designTokens?: number[] });
+        return handleAuditDesignTokens(args as Record<string, unknown>);
       case 'detect_nested_lists':
-        return handleDetectNestedLists(args as { filePath: string });
+        return handleDetectNestedLists(args as Record<string, unknown>);
       case 'detect_absolute_overlaps':
-        return handleDetectAbsoluteOverlaps(args as { filePath: string });
+        return handleDetectAbsoluteOverlaps(args as Record<string, unknown>);
 
       // v1.1.0: Visual Semantic Orchestration Tools
       case 'audit_spacing_rhythm':
-        return handleAuditSpacingRhythm(args as { filePath: string });
+        return handleAuditSpacingRhythm(args as Record<string, unknown>);
       case 'audit_semantic_proximity':
-        return handleAuditSemanticProximity(args as { filePath: string });
+        return handleAuditSemanticProximity(args as Record<string, unknown>);
 
       default:
         return {
