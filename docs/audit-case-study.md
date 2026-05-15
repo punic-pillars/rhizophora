@@ -1,6 +1,6 @@
 # Rhizophora Benchmark Report: The "Premium Chaos" Audit
 
-This report documents the deterministic failure patterns embedded in the `rhizophora-testbed` project. It demonstrates the ability of the Rhizophora MCP to detect architectural rot that is visually undetectable but structurally dangerous.
+This report documents the deterministic failure patterns embedded in the `rhizophora-testbed` project. It demonstrates the ability of the Rhizophora MCP to quantify architectural rot that is deliberately seeded with visible but unquantified chaos.
 
 ---
 
@@ -9,13 +9,13 @@ This report documents the deterministic failure patterns embedded in the `rhizop
 ![Home screen annotated](screenshots/home.png)
 ![Home screen detail](screenshots/home-2.png)
 
-### 🛠️ Execution Command
+### Execution Command
 `rhz detect_boundary_gaps --filePath app/(tabs)/index.tsx`
 
-### 🚩 Critical Issue: Asymmetric Margin Pollution & Ghost Walls
-The Home screen uses a 1px/17px margin drift between siblings. To a human eye, the grid looks perfectly aligned. To the auditor, it represents a breakdown in the 8px design system.
+### Critical Issue: Asymmetric Margin Pollution & Ghost Walls
+The Home screen uses a 1px/17px margin drift between siblings. The grid is visibly chaotic -- the 15px/16px/17px drift is apparent even on screen. What Rhizophora does is quantify each violation against the 8px design system, turning visual noise into a structured audit trail.
 
-#### 📡 Rhizophora Signal (Real Audit Output)
+#### Rhizophora Signal (Real Audit Output)
 ```text
 [HIGH] style-pollution | Container "ScrollView" (line 10) has 3 children using margins instead of parent gap.
 [HIGH] style-pollution | Container "View" (line 21) has 3 children using margins instead of parent gap.
@@ -27,8 +27,8 @@ The Home screen uses a 1px/17px margin drift between siblings. To a human eye, t
 [SUMMARY] Health score: 20/100 — 5 critical, 11 warning(s), 16 info.
 ```
 
-#### 🔍 Deep Find: Hidden Ghost Margins Inside Nested Children
-This is the most dangerous finding — Rhizophora traced ghost margins **through nested component boundaries**, surfacing invisible spacing collisions no human QA would catch from a visual inspection.
+#### Deep Find: Ghost Margins Inside Nested Children
+This is the most dangerous finding -- Rhizophora traced ghost margins through nested component boundaries, surfacing the cascading spacing collisions that a human eye can see but cannot trace through three levels of nesting.
 
 ```text
 [MEDIUM] ghost-margin | Ghost Margin: Container <ScrollView> has paddingBottom: 40px and its last
@@ -44,16 +44,16 @@ This is the most dangerous finding — Rhizophora traced ghost margins **through
   Creates redundant "Ghost Margin" boundary spacing.
 ```
 
-#### 💻 The Culprit Code
+#### The Culprit Code
 ```tsx
-// Asymmetric sibling margins — visually identical, architecturally broken
+// Asymmetric sibling margins — deliberately asymmetric, architecturally broken
 <TouchableOpacity style={[styles.productCard, { marginRight: 16 }]}>...</TouchableOpacity>
 <TouchableOpacity style={[styles.productCard, { marginRight: 15 }]}>...</TouchableOpacity>
 <TouchableOpacity style={[styles.productCard, { marginRight: 17 }]}>...</TouchableOpacity>
 
-// Ghost Wall cascade: ScrollView (40px) → child View (24px) = 64px invisible gap
+// Ghost Wall cascade: ScrollView (40px) → child View (24px) = 64px gap
 <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-  <View style={{ paddingBottom: 24 }}>          {/* Hidden collision */}
+  <View style={{ paddingBottom: 24 }}>          {/* Deliberate collision */}
     <TouchableOpacity style={{ marginBottom: 16 }}>  {/* Terminal ghost */}
       ...
     </TouchableOpacity>
@@ -61,7 +61,7 @@ This is the most dangerous finding — Rhizophora traced ghost margins **through
 </ScrollView>
 ```
 
-#### 🔄 The Rhizophora Remediation Path
+#### The Rhizophora Remediation Path
 Rhizophora enforces a strict "Order of Operations" for this screen:
 1. **Foundation Fix**: Run `detect_boundary_gaps` to flag the off-token margins (`15px`, `17px`) and the ghost wall cascade (`ScrollView paddingBottom: 40 + child paddingBottom: 24 = 64px unintended gap`).
 2. **Token Alignment**: Replace all child margins with a parent `gap: 16` to collapse the drift into a single source of truth.
@@ -73,24 +73,24 @@ Rhizophora enforces a strict "Order of Operations" for this screen:
 
 ![Dashboard annotated](screenshots/dashboard.png)
 
-### 🛠️ Execution Command
+### Execution Command
 `rhz detect_bridge_crossings --filePath app/(tabs)/dashboard.tsx`
 `rhz audit_semantic_proximity --filePath app/(tabs)/dashboard.tsx`
 
-### 🚩 Critical Issue: UI-Thread Bridge Crossing
+### Critical Issue: UI-Thread Bridge Crossing
 The dashboard calculates its own width using a standard React `useState` inside an `onLayout` handler. This causes a "Bridge Crossing" that blocks the UI thread during every layout pass.
 
-### 🚩 Critical Issue: Potential Sibling Blocking (Layout Pollution)
-The metric cards look like siblings, but because they use hardcoded margins, the semantic auditor **refuses to suggest optimizations**.
+### Critical Issue: Potential Sibling Blocking (Layout Pollution)
+The metric cards look like siblings, but because they use hardcoded margins, the semantic auditor refuses to suggest optimizations.
 
-#### 📡 Rhizophora Signal
+#### Rhizophora Signal
 ```text
 [HIGH] onLayout → setWidth (line 12)
   Context: (e) => setWidth(e.nativeEvent.layout.width)
 [BLOCKED] Layout Pollution: Cannot suggest semantic grouping... siblings are using hardcoded margins.
 ```
 
-#### 💻 The Culprit Code
+#### The Culprit Code
 ```tsx
 // app/(tabs)/dashboard.tsx
 const [width, setWidth] = useState(0);
@@ -100,7 +100,7 @@ const [width, setWidth] = useState(0);
 <TouchableOpacity style={[styles.metricCard, { marginRight: 5 }]}>...</TouchableOpacity>
 ```
 
-#### 🔄 The Rhizophora Remediation Path
+#### The Rhizophora Remediation Path
 Rhizophora enforces a strict "Order of Operations" for this screen:
 1. **Foundation Fix**: Run `detect_boundary_gaps` to identify and remove the hardcoded margins (`12px`, `5px`, `23px`).
 2. **Semantic Realignment**: Once the margins are gone, re-run `audit_semantic_proximity` to group the metric cards into a logical section based on their 7/10 Proximity Score.
@@ -110,14 +110,14 @@ Rhizophora enforces a strict "Order of Operations" for this screen:
 
 ## 3. Explore: Structural & Performance Debt (`explore.tsx`)
 
-### 🛠️ Execution Command
+### Execution Command
 `rhz detect_nested_lists --filePath app/(tabs)/explore.tsx`
 `rhz render_structural_diagram --filePath app/(tabs)/explore.tsx`
 
-### 🚩 Critical Issue: Triple Nesting & Split Siblings
+### Critical Issue: Triple Nesting & Split Siblings
 The Explore screen uses three levels of nested `.map()` calls, creating exponential render complexity. Additionally, it uses the "Illusion of Siblinghood" pattern where cards are visually grouped but architecturally isolated.
 
-#### 📡 Rhizophora Signal
+#### Rhizophora Signal
 ```text
 [NESTED-LISTS] Found 4 nested list(s).
   <View> (line 25) contains <ScrollView> (line 27) — nested list.
@@ -129,7 +129,7 @@ The Explore screen uses three levels of nested `.map()` calls, creating exponent
   │  │  ├── <TouchableOpacity>
 ```
 
-#### 💻 The Culprit Code
+#### The Culprit Code
 ```tsx
 // app/(tabs)/explore.tsx
 {CATEGORIES.map((cat) => (
@@ -147,7 +147,7 @@ The Explore screen uses three levels of nested `.map()` calls, creating exponent
 ))}
 ```
 
-#### 🔄 The Rhizophora Remediation Path
+#### The Rhizophora Remediation Path
 Rhizophora enforces a strict "Order of Operations" for this screen:
 1. **Structural Flatten**: Use `render_structural_diagram` to expose the unnecessary `cardIsolationWrapper` containers trapping the sibling cards.
 2. **Promotion to Peers**: Remove the isolation wrappers so both `<TouchableOpacity>` cards become direct children of `splitParent`, enabling `gap`-based spacing.
@@ -156,7 +156,7 @@ Rhizophora enforces a strict "Order of Operations" for this screen:
 
 ---
 
-## 🏁 Summary of Benchmark Value
-This testbed proves that **visual correctness != architectural health**. By deterministic seeding of these "hard to find" issues, we can now validate that any future updates to the Rhizophora MCP maintain 100% sensitivity to high-fidelity layout rot.
+## Summary of Benchmark Value
+This testbed proves that **visual correctness != architectural health**. By deterministic seeding of these visible but unquantified issues, we can now validate that any future updates to the Rhizophora MCP maintain 100% sensitivity to high-fidelity layout rot.
 
 Or just let an AI coding assistant call the Rhizophora MCP tools directly. The structured output is clear enough that the AI understands which tool to invoke next and can fix the issue without manual intervention.
