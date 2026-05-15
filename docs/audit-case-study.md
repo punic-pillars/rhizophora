@@ -160,3 +160,5 @@ Rhizophora enforces a strict "Order of Operations" for this screen:
 This testbed proves that **visual correctness != architectural health**. By deterministic seeding of these visible but unquantified issues, we can now validate that any future updates to the Rhizophora MCP maintain 100% sensitivity to high-fidelity layout rot.
 
 Or just let an AI coding assistant call the Rhizophora MCP tools directly. The structured output is clear enough that the AI understands which tool to invoke next and can fix the issue without manual intervention.
+
+**Try it yourself.** Clone [github.com/Aymen-cosmos/rhizophora-testbed](https://github.com/Aymen-cosmos/rhizophora-testbed), install it, and run Rhizophora against any of its screens. Let an AI coding assistant fix the tons of feedback it generates -- you will notice the difference between guessing pixels and having a structured audit trail.
