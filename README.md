@@ -1,6 +1,6 @@
 # Rhizophora
 
-**Spatial Integrity & Layout Audit for React Native**
+**ESLint for UI -- catch layout bugs, margin pollution, and performance traps in React Native**
 
 [![npm version](https://img.shields.io/npm/v/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
 [![npm downloads](https://img.shields.io/npm/dm/rhizophora.svg)](https://www.npmjs.com/package/rhizophora)
@@ -8,121 +8,115 @@
 [![GitHub](https://img.shields.io/badge/github-punic--pillars%2Frhizophora-blue)](https://github.com/punic-pillars/rhizophora)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-An AI reading your source code sees characters, not composition. It cannot tell that two components are too close, that a margin is leaking, or that an animation is running on the wrong thread. Rhizophora eliminates AI layout hallucinations by providing **Ground Truth** for your component tree -- translating static `.tsx` files into a deterministic layout audit that catches margin pollution, token deviations, and spacing gaps that an LLM would never see. A Model Context Protocol (MCP) server that plugs into any AI coding assistant. Three phases: **Guardians** catch pollution and performance bugs. **Architects** enforce layout hygiene. **Profilers** optimize for 60fps.
+An AI reading your source code sees characters, not composition. It cannot tell that two components are too close, that a margin is leaking, or that an animation is running on the wrong thread.
 
-No server to run. No emulator. No runtime. Works offline, in CI/CD, or inside your AI coding session.
+Rhizophora is **ESLint for UI**: static analysis for your React Native component tree. It catches margin pollution, bridge crossings, render traps, and design token deviations -- without an emulator, without a runtime, and without guessing pixels.
 
-> *Rhizophora -- the mangrove whose prop roots spread above ground, connecting what's hidden beneath the surface. Like Vein Propagation, it reveals the invisible structure of your component trees.*
-
----
-
-## Why Rhizophora
-
-Standard linters check syntax. Rhizophora checks **runtime architecture**.
-
-AI models cannot see your app's layout, feel its spacing rhythm, or know if design tokens are followed. They read tokens, not pixels. Rhizophora translates raw code into a **Semantic Layout Graph** -- a prosthetic vision system that gives AI the spatial awareness to see that two components are too close, a margin is leaking into a parent, or an animation value is being mutated on the wrong thread.
-
-**Key differentiators:**
-- **Deterministic, not probabilistic** -- Uses strict AST parsing and mathematical algorithms (3-variable Proximity Score). No AI guessing pixels, no hallucinations.
-- **Native-specific intelligence** -- Catches bridge crossings, SharedValue thread violations, and ghost margins that standard linters cannot see.
-- **Foundation Check enforcement** -- If children use hardcoded margins instead of parent `gap`, Rhizophora blocks the analysis with a HIGH severity message directing you to fix the foundation first. Opinionated gatekeeping that forces best practices.
-
-### The Rhizome vs. The Hallucination
-
-In nature, a rhizome is a hidden network that dictates where the plant can grow. In React Native, your design tokens and spatial constraints are that network. AI models hallucinate because they see the "leaves" but ignore the "roots." Rhizophora exposes the root system, ensuring that every generated component is anchored in your project's actual spatial reality.
+No server to run. Works offline, in CI/CD, or inside your AI coding session.
 
 ---
 
-## Tools (15 total)
+## Features
 
-> **Performance Guards (v0.2.0):** All Vein-powered tools (marked **[Vein-Powered AST]**) accept optional `maxFiles` (default 20), `maxFileSizeKB` (default 500), and `timeoutMs` (default 10000) to prevent runaway analysis on large codebases. When limits are hit, the analysis degrades gracefully with a truncation notice rather than failing.
+- **Catch layout gaps & margin pollution** -- Detect inconsistent spacing between containers and children, ghost margins, and missing last-item guards
+- **Detect performance traps** -- Find bridge crossings (JS-thread blocking in UI handlers), render traps (inline props defeating React.memo), and SharedValue thread violations
+- **Enforce design tokens** -- Validate all spacing values against your token whitelist. Flag deviations with suggested replacements
+- **Snapshot & diff layout across commits** -- Serialize the full component tree to `.rhizome/` JSON files. Compare snapshots to catch layout drift before merge
+- **AI-friendly MCP tools** -- 15 tools that plug into Claude, Cursor, Continue.dev, and any MCP-compatible coding assistant
 
-> **Regression Detection (v0.3.0):** Two new serialization tools (`snapshot_layout_graph`, `diff_layout_graphs`) enable cross-commit layout regression detection. Snapshots are stored as `.rhizome/` JSON files that can be committed to git and compared across branches.
-
-### Phase 1: Guardians -- Catch Pollution & Performance Bugs
-
-| Tool | What it does |
-|------|-------------|
-| `detect_boundary_gaps` | **[Vein-Powered AST]** Scans for gap opportunities, style pollution, margin stacking, list item issues, and design token deviations. Supports bipartite layout components (ScrollView, FlatList, SectionList) -- extracts both `style` and `contentContainerStyle` for accurate gap detection. Modes: `vein-propagation` (default), `all` |
-| `detect_bridge_crossings` | **[Standalone Regex]** UI Thread Guardian -- finds `useState`/`useEffect` inside `onScroll`, `onLayout`, worklets, and gesture handlers. Scans 17 handler patterns with cross-file hook propagation |
-| `detect_render_traps` | **[Standalone Regex]** React.memo Enforcer -- detects inline functions, objects, and arrays passed to memoized components. Deep hook data-flow tracing + HOC unwrapping |
-| `trace_shared_value_lineage` | **[Standalone Regex]** SharedValue Lifecycle Tracer -- tracks creation to mutation to consumption, catches direct-JSX-usage bug. Context propagation + delegated value resolution |
-| `detect_nested_lists` | **[Vein-Powered AST]** Finds `.map()` inside `.map()` -- a known React Native performance anti-pattern |
-
-### Phase 2: Architects -- Enforce Layout Hygiene
-
-| Tool | What it does |
-|------|-------------|
-| `render_structural_diagram` | **[Standalone Regex]** Converts `.tsx`/`.jsx` into ASCII layout trees showing JSX nesting, StyleSheet properties, and animated styles. Uses 15-regex pattern engine -- no AST. Limited to uppercase components + view/text/animated/scrollview |
-| `analyze_component_tree` | **[Vein-Powered AST]** Cross-file ASCII structural diagram with spacing annotations, slot markers, list item markers, and health score. Uses @typescript-eslint/parser + VenousPropagator for cross-file resolution |
-| `profile_screen_complexity` | **[Vein-Powered AST]** Generates a Bill of Materials: total components, max depth, container/leaf ratio, complexity grade |
-| `trace_component_import` | **[Vein-Powered AST]** Traces a component's import chain from usage to source definition through barrel files and re-exports |
-| `audit_design_tokens` | **[Vein-Powered AST]** Scans for spacing values not in the design token whitelist. Reports each deviation with suggested replacement |
-| `detect_absolute_overlaps` | **[Vein-Powered AST]** Finds absolutely-positioned elements, reports position/zIndex/dimensions, flags missing zIndex or dimensions |
-
-### Phase 3: Profilers -- Optimize for 60fps
-
-| Tool | What it does |
-|------|-------------|
-| `audit_spacing_rhythm` | **Orchestration** -- Enforces `inner_gap < outer_gap` to prevent flat UIs. **Includes Foundation Check**: blocked if children use hardcoded margins instead of parent gap |
-| `audit_semantic_proximity` | **Orchestration** -- Clusters sibling components by semantic prefix to detect ungrouped related components. **Includes Foundation Check**: blocked if container has margin pollution |
-
-### Phase 4: Regression Detection -- Prevent Layout Drift
-
-| Tool | What it does |
-|------|-------------|
-| `snapshot_layout_graph` | **[Serialization]** Serializes the full Semantic Layout Graph (component tree, spacing annotations, layout properties, violation counts, health score, complexity profile) to a `.rhizome/` JSON file. Captures git commit hash and timestamp for cross-commit comparison |
-| `diff_layout_graphs` | **[Serialization]** Compares two layout graph snapshots and produces a structured diff report showing structural changes (nodes added/removed), spacing changes (margin/padding/gap deltas), violation count changes, health score changes, and complexity grade changes |
-
----
-
-## Recommended Workflow
-
-```
-Phase 1: Guardians (understand the component)
-  render_structural_diagram  ->  profile_screen_complexity
-  trace_component_import     ->  detect_render_traps
-
-Phase 2: Architects (fix layout & spacing)
-  detect_boundary_gaps       ->  audit_design_tokens
-  detect_absolute_overlaps
-  audit_spacing_rhythm       ->  audit_design_tokens
-  audit_semantic_proximity   ->  audit_spacing_rhythm
-
-Phase 3: Profilers (optimize rendering)
-  detect_bridge_crossings    ->  trace_shared_value_lineage
-  detect_render_traps
-  detect_nested_lists        ->  detect_boundary_gaps
-
-Phase 4: Regression Detection (prevent layout drift)
-  snapshot_layout_graph      ->  [make changes]  ->  snapshot_layout_graph  ->  diff_layout_graphs
-```
-
-**Foundation Check**: `audit_spacing_rhythm` and `audit_semantic_proximity` both run a Foundation Check before analysis. If a container's children use hardcoded margins instead of parent-controlled `gap`, the analysis is blocked with a HIGH severity message directing you to run `detect_boundary_gaps` first. This prevents suggesting semantic grouping or rhythm scaling on top of polluted spacing architecture.
+> See Rhizophora catch real layout bugs in a deliberately broken React Native app: [docs/audit-case-study.md](docs/audit-case-study.md) -- includes annotated screenshots and Rhizophora audit output
 
 ---
 
 ## Quick Start
 
 ```bash
-# Install and build
-npm install
-npm run build
-
-# Run smoke tests
-npx tsx src/__tests__/smoke-test.ts
+# Analyze a component
+npx rhizophora-cli --ci src/components/StationCard.tsx
 ```
 
-### Add to MCP Settings
+**Output:**
 
-**Option 1: Via npx (no install needed)**
+```
+FAIL: src/components/StationCard.tsx
+  Bridge Crossings: 2 | Render Traps: 1 | SharedValue Issues: 0 | Boundary Gaps: 3
+  Details:
+    [high] onScroll -> useState (line 42) -- replace with useSharedValue
+    [high] onLayout -> useEffect (line 67) -- move to worklet
+    [medium] container paddingBottom:16 + last child marginBottom:16 = 32px total gap
+    [medium] <StationTitle> marginTop: 16 -- use parent gap instead
+    [low] <CardBody> marginHorizontal: 12 -- consider design token 8 or 16
+
+Summary: 1 file(s) scanned, 6 total issue(s)
+   0 passed, 1 failed
+```
+
+---
+
+## Available Tools
+
+<details>
+<summary><strong>Guardians (5 tools)</strong> -- catch pollution & performance bugs</summary>
+
+| Tool | What it does |
+|------|-------------|
+| `detect_boundary_gaps` | Scan for inconsistent spacing, style pollution, margin stacking, and design token deviations |
+| `detect_bridge_crossings` | Find useState/useEffect inside onScroll, onLayout, gesture handlers, and worklets |
+| `detect_render_traps` | Detect inline functions, objects, and arrays passed to React.memo() wrapped components |
+| `trace_shared_value_lineage` | Trace useSharedValue lifecycle: declarations, mutations, consumption, and thread violations |
+| `detect_nested_lists` | Find .map() inside .map() -- a known React Native performance anti-pattern |
+
+</details>
+
+<details>
+<summary><strong>Architects (6 tools)</strong> -- enforce layout hygiene</summary>
+
+| Tool | What it does |
+|------|-------------|
+| `render_structural_diagram` | Render ASCII structural diagrams showing JSX nesting, StyleSheet properties, and layout relationships |
+| `analyze_component_tree` | Cross-file ASCII structural diagram with spacing annotations, slot markers, and health score |
+| `profile_screen_complexity` | Generate a Bill of Materials: component count, max depth, container/leaf ratio, complexity grade |
+| `trace_component_import` | Trace a component's import chain from usage to source definition through barrel files |
+| `audit_design_tokens` | Scan for spacing values not in the design token whitelist with suggested replacements |
+| `detect_absolute_overlaps` | Find absolutely-positioned elements and flag missing zIndex or dimensions |
+
+</details>
+
+<details>
+<summary><strong>Profilers (2 tools)</strong> -- optimize for 60fps</summary>
+
+| Tool | What it does |
+|------|-------------|
+| `audit_spacing_rhythm` | Validate gaps using Proximity Score between siblings. Enforces inner_gap < outer_gap |
+| `audit_semantic_proximity` | 3-variable Semantic Scoring Engine (Lexical 40% + Prop DNA 30% + Visual 30%) |
+
+</details>
+
+<details>
+<summary><strong>Regression Detection (2 tools)</strong> -- prevent layout drift</summary>
+
+| Tool | What it does |
+|------|-------------|
+| `snapshot_layout_graph` | Serialize the full Semantic Layout Graph to a .rhizome/ JSON file for cross-commit diffing |
+| `diff_layout_graphs` | Compare two layout graph snapshots: structural changes, spacing deltas, health score changes |
+
+</details>
+
+> **Full detector reference** with violation examples, fix suggestions, and code snippets: see [`docs/reference.md`](docs/reference.md)
+
+---
+
+## Installation
+
+<details>
+<summary><strong>Claude Desktop</strong></summary>
+
+Add to `claude_desktop_config.json`:
+
 ```json
 {
   "mcpServers": {
     "rhizophora": {
-      "disabled": false,
-      "timeout": 60,
-      "type": "stdio",
       "command": "npx",
       "args": ["-y", "rhizophora"]
     }
@@ -130,14 +124,53 @@ npx tsx src/__tests__/smoke-test.ts
 }
 ```
 
-**Option 2: Local install**
+</details>
+
+<details>
+<summary><strong>Cursor</strong></summary>
+
+Create `.cursor/mcp.json` in your project root:
+
 ```json
 {
   "mcpServers": {
     "rhizophora": {
-      "disabled": false,
-      "timeout": 60,
-      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "rhizophora"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Continue.dev (VS Code / JetBrains)</strong></summary>
+
+Add to `~/.continue/config.json`:
+
+```json
+{
+  "experimental": {
+    "mcpServers": {
+      "rhizophora": {
+        "command": "npx",
+        "args": ["-y", "rhizophora"]
+      }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Local install (no network)</strong></summary>
+
+```json
+{
+  "mcpServers": {
+    "rhizophora": {
       "command": "node",
       "args": ["/absolute/path/to/rhizophora/build/index.js"]
     }
@@ -145,57 +178,115 @@ npx tsx src/__tests__/smoke-test.ts
 }
 ```
 
----
+</details>
 
-## How It Works
+<details>
+<summary><strong>CI/CD (GitHub Actions / GitLab)</strong></summary>
 
-The Vein Propagation Engine processes source code through 4 deterministic phases:
+**GitHub Actions** -- `.github/workflows/rhizophora.yml`:
 
-1. **AST Parse** -- Parses `.tsx`/`.ts` files into a TypeScript AST using `@typescript-eslint/typescript-estree`
-2. **Venous Propagate** -- Recursively walks the component tree, following imports and resolving functional components across files
-3. **Build Semantic Layout Graph** -- Creates a graph where nodes = components with spacing tokens, edges = parent-child relationships
-4. **Heuristic Inference** -- Analyzes the graph to detect layout issues using mathematical algorithms (not AI)
-
-**100% deterministic.** No emulator, no runtime, no pixel guessing. Works directly from source code.
-
-### Key Issues Detected
-
-| Issue | Severity | Description |
-|-------|----------|-------------|
-| Gap Opportunities | High | Containers using child margins instead of parent `gap` |
-| Style Pollution | High/Medium | Base components with hardcoded margins |
-| Bridge Crossings | High | JS-thread blocking logic in UI-thread handlers |
-| Render Traps | High | Inline props defeating React.memo |
-| Foundation Blockers | High | Children use hardcoded margins -- must fix spacing before semantic analysis |
-
----
-
-## CI/CD Integration
-
-```bash
-# Check files (exit code 1 on failure)
-npx rhizophora-cli --ci src/components/MyComponent.tsx
-
-# JSON output for pipeline parsing
-npx rhizophora-cli --ci --json src/**/*.tsx
+```yaml
+name: Layout Audit
+on: [pull_request]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci && npm run build
+      - run: npx rhizophora-cli --ci --json src/ > layout-report.json
+      - uses: actions/upload-artifact@v4
+        with: { name: layout-report, path: layout-report.json }
 ```
 
-| Flag | Description |
-|------|-------------|
-| `--ci` | Exit with code 1 if any issues found |
-| `--json` | Output results as JSON for pipeline parsing |
-| `--paired-files` | Compare files in pairs (0,1), (2,3), etc. |
+**GitLab CI**:
+
+```yaml
+rhizophora-audit:
+  stage: test
+  image: node:20
+  script:
+    - npm ci && npm run build
+    - npx rhizophora-cli --ci --json src/ > layout-report.json
+  artifacts: { paths: [layout-report.json] }
+```
+
+**CLI flags:** `--ci` (exit code 1 on failure), `--json` (JSON output), `--paired-files` (compare in pairs)
+
+</details>
+
+<details>
+<summary><strong>Environment variables</strong></summary>
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RHIZOPHORA_MAX_FILES` | `20` | Max files to parse before truncating |
+| `RHIZOPHORA_MAX_FILE_SIZE_KB` | `500` | Skip files larger than this |
+| `RHIZOPHORA_TIMEOUT_MS` | `10000` | Analysis timeout in milliseconds |
+
+</details>
 
 ---
 
-## Philosophy
+## Snapshot & Diff Workflow
 
-**Read-only static analysis.** Rhizophora works from source code, producing deterministic results without needing a running app. Fast, reliable, works in CI/CD.
+Prevent layout drift across commits in 4 steps:
 
-**What it does NOT do:**
-- Guess Flexbox coordinates (AI cannot calculate layout from code)
-- Require an emulator or running app
-- Validate hardcoded math equations (they evolve too fast)
-- Summarize what an AI can already read from source code
+1. **Establish a baseline** -- Call `snapshot_layout_graph` after a known-good layout state. Creates `.rhizome/baseline.json`
+2. **Commit `.rhizome/` to git** -- These JSON files (2-10 KB each) are your layout regression test suite
+3. **Take a new snapshot** -- Call `snapshot_layout_graph` again after making changes
+4. **Compare** -- Call `diff_layout_graphs` with the two snapshot paths. Reports structural changes, spacing deltas, violation count changes, and health score changes
 
-> **Full architecture reference**: See [`docs/reference.md`](docs/reference.md) for the complete annotated file tree, design patterns, module deep dives, and coding conventions.
+> **Detailed walkthrough with example diff output**: see [`docs/reference.md`](docs/reference.md)
+
+---
+
+## Why Rhizophora?
+
+| Problem | ESLint | react-native-performance | Detox | Rhizophora |
+|---------|--------|--------------------------|-------|------------|
+| Detect inconsistent spacing gaps | :x: | :x: | :x: | :heavy_check_mark: |
+| Catch bridge crossings (JS thread blocking) | :x: | :x: | :x: | :heavy_check_mark: |
+| Detect render traps (inline props defeating memo) | :x: | :x: | :x: | :heavy_check_mark: |
+| Trace SharedValue lifecycle across threads | :x: | :x: | :x: | :heavy_check_mark: |
+| Snapshot layout state across commits | :x: | :x: | :x: | :heavy_check_mark: |
+| Diff layout graphs between branches | :x: | :x: | :x: | :heavy_check_mark: |
+| Validate design token compliance | :x: | :x: | :x: | :heavy_check_mark: |
+| Detect nested list anti-patterns | :x: | :x: | :x: | :heavy_check_mark: |
+| AI-friendly MCP tools | :x: | :x: | :x: | :heavy_check_mark: |
+| Static analysis (no emulator/runtime) | :heavy_check_mark: | :x: | :x: | :heavy_check_mark: |
+
+**Key differentiators:**
+- **Deterministic, not probabilistic** -- Strict AST parsing and mathematical algorithms. No AI guessing pixels
+- **Native-specific intelligence** -- Catches bridge crossings, SharedValue thread violations, and ghost margins that standard linters cannot see
+- **Foundation Check enforcement** -- Blocks analysis if children use hardcoded margins instead of parent `gap`. Opinionated gatekeeping that forces best practices
+
+---
+
+## Version Compatibility
+
+| Requirement | Supported Versions |
+|-------------|-------------------|
+| Node.js | >= 18.0.0 |
+| TypeScript | >= 5.0 (recommended) |
+| React Native | 0.72 -- 0.76 (tested) |
+| Expo SDK | 49 -- 52 (compatible) |
+| React Native Reanimated | 2.x -- 3.x |
+
+---
+
+## Limitations
+
+| Limitation | Impact |
+|------------|--------|
+| Fragment collapse | Complex fragments may collapse into single nodes in `analyze_component_tree` |
+| Inline styles partially missed | Dynamic expressions (e.g., `marginTop: isActive ? 16 : 8`) not resolved statically |
+| No Flexbox coordinate calculation | Cannot predict actual rendered positions (by design) |
+| No runtime value resolution | Variables and computed values not resolved (by design) |
+| Expo Router file-based routing | Not fully supported -- detectors work on individual screen files |
+
+---
+
+> **Full documentation**: Detector reference with violation examples and fix suggestions, MCP tool call JSON schemas, visual layout graph ASCII examples, recommended workflow, and architecture deep dive in [`docs/reference.md`](docs/reference.md)

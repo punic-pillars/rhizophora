@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.3.1 (2026-05-15)
+
+### Docs
+
+- **Audit Case Study**: Added `docs/audit-case-study.md` -- a real-world benchmark report ("The Premium Chaos" Audit) with annotated screenshots showing Rhizophora catching layout bugs on 3 screens (Home, Dashboard, Explore). Includes Rhizophora signal output, culprit code, and remediation paths.
+- **Screenshots**: Added `docs/screenshots/` with 3 annotated PNG files (home.png, home-2.png, dashboard.png) for the case study.
+- **README Overhaul**: Restructured from 658 lines to ~290 lines using collapsible sections for scannability. Added "ESLint for UI" tagline. Added case study quick link after Features section. Clarified product positioning (NOT like Husky, 3 faces: MCP Server + npm package + CI/CD CLI). Added AI remediation closing paragraph to case study.
+
+### Fixes
+
+- **LICENSE**: Fixed copyright holder from "Rhizophora" to "Punic Pillars".
+
+### Chores
+
+- Bumped version to 0.3.1
+
 ## v0.3.0 (2026-05-14)
 
 ### Features

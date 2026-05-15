@@ -180,6 +180,13 @@ export function getScreenProfile(ctx: AnalysisContext): string {
   lines.push(`  onLayout handlers: ${onLayoutNodes.length}`);
   lines.push(`  Health score: ${inference.healthScore}/100`);
 
+  // v2.4.0: New analysis counts
+  lines.push(`  Dimension inconsistencies: ${inference.dimensionInconsistencies.length}`);
+  lines.push(`  Section merge suggestions: ${inference.sectionMergeSuggestions.length}`);
+  // v2.5.0: New analysis counts
+  lines.push(`  Proportional incoherences: ${inference.proportionalIncoherences.length}`);
+  lines.push(`  Opaque dimensions: ${inference.opaqueDimensions.length}`);
+
   // Complexity grade
   const score = inference.healthScore;
   let grade: string;

@@ -36,6 +36,10 @@ import type {
   BoundaryViolation,
   GroupingSuggestion,
   TerminalPaddingViolation,
+  DimensionInconsistency,
+  SectionMergeSuggestion,
+  ProportionalIncoherence,
+  OpaqueDimension,
   TruncationInfo,
 } from './types.js';
 
@@ -134,6 +138,18 @@ export class HeuristicInferenceEngine {
     // ─── v2.3.0: Terminal Padding Violations ─────────────────────
     const terminalPaddingViolations = this.analyzer.findTerminalPaddingViolations(graph);
 
+    // ─── v2.4.0: Dimension Inconsistencies (Gap 5b) ─────────────
+    const dimensionInconsistencies = this.analyzer.findDimensionInconsistencies(graph);
+
+    // ─── v2.4.0: Section Merge Suggestions (Gap 4) ──────────────
+    const sectionMergeSuggestions = this.analyzer.findSectionMergeSuggestions(graph, pollutedContainers);
+
+    // ─── v2.5.0: Proportional Incoherences (Gap 6) ──────────────
+    const proportionalIncoherences = this.detectProportionalIncoherences(graph);
+
+    // ─── v2.5.0: Opaque Dimensions (Gap 8) ──────────────────────
+    const opaqueDimensions = this.detectOpaqueDimensions(graph);
+
     const healthScore = this.calculateHealthScore(
       dedupedGaps.length,
       dedupedPollution.length,
@@ -146,6 +162,10 @@ export class HeuristicInferenceEngine {
       boundaryViolations.length,
       groupingSuggestions.length,
       terminalPaddingViolations.length,
+      dimensionInconsistencies.length,
+      sectionMergeSuggestions.length,
+      proportionalIncoherences.length,
+      opaqueDimensions.length,
       graph.getAllNodes().length
     );
 
@@ -161,6 +181,10 @@ export class HeuristicInferenceEngine {
       boundaryViolations,
       groupingSuggestions,
       terminalPaddingViolations,
+      dimensionInconsistencies,
+      sectionMergeSuggestions,
+      proportionalIncoherences,
+      opaqueDimensions,
       healthScore,
       truncation,
     };
@@ -450,18 +474,135 @@ export class HeuristicInferenceEngine {
     boundaryCount: number,
     groupingCount: number,
     terminalPaddingCount: number,
+    dimensionInconsistencyCount: number,
+    sectionMergeCount: number,
+    proportionalIncoherenceCount: number,
+    opaqueDimensionCount: number,
     totalNodes: number
   ): number {
     if (totalNodes === 0) return 100;
 
     const totalIssues = gapCount + pollutionCount + stackingCount + listIssuesCount +
       tokenDeviationCount + rhythmCount + proximityCount +
-      contextualGapCount + boundaryCount + groupingCount + terminalPaddingCount;
+      contextualGapCount + boundaryCount + groupingCount + terminalPaddingCount +
+      dimensionInconsistencyCount + sectionMergeCount +
+      proportionalIncoherenceCount + opaqueDimensionCount;
 
     const issueRatio = totalIssues / totalNodes;
 
     const score = Math.max(0, Math.min(100, Math.round(100 - issueRatio * 50)));
 
     return score;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // v2.5.0: Proportional Incoherence Detection (Gap 6)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * v2.5.0 "Proportional Incoherence": Detect children whose fontSize
+   * is disproportionately small compared to their parent's height.
+   *
+   * Threshold: fontSize < 15% of parent height.
+   * Only checks when both values are numeric (no coordinate calculation).
+   *
+   * This catches patterns like tiny text inside a tall button where
+   * the text is visually "lost" inside the container.
+   */
+  private detectProportionalIncoherences(graph: SemanticLayoutGraph): ProportionalIncoherence[] {
+    const incoherences: ProportionalIncoherence[] = [];
+
+    for (const parent of graph.getContainerNodes()) {
+      if (parent.isSlot) continue;
+      if (typeof parent.layout.height !== 'number') continue;
+      if (parent.layout.height <= 0) continue;
+
+      const parentHeight = parent.layout.height;
+
+      for (const child of parent.children) {
+        if (typeof child.layout.fontSize !== 'number') continue;
+        if (child.layout.fontSize <= 0) continue;
+
+        const childFontSize = child.layout.fontSize;
+        const ratio = childFontSize / parentHeight;
+
+        // Flag if fontSize < 15% of parent height
+        if (ratio < 0.15) {
+          const ratioPercent = Math.round(ratio * 100);
+          incoherences.push({
+            parent,
+            child,
+            parentHeight,
+            childFontSize,
+            ratio: Math.round(ratio * 100) / 100,
+            severity: ratio < 0.1 ? 'medium' : 'low',
+            description: `Proportional Incoherence: <${child.componentName}> (line ${child.lineNumber}) has fontSize: ${childFontSize} inside <${parent.componentName}> (line ${parent.lineNumber}) with height: ${parentHeight}. Text occupies only ${ratioPercent}% of container height — visually lost.`,
+            suggestion: `Increase fontSize of <${child.componentName}> from ${childFontSize} to at least ${Math.round(parentHeight * 0.15)} (15% of parent height) for better visual proportion.`,
+          });
+        }
+      }
+    }
+
+    return incoherences;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // v2.5.0: Opaque Dimension Detection (Gap 8)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * v2.5.0 "Opaque Dimension Auditor": Detect width/height values
+   * that are string/percentage (e.g., '100%') instead of numeric pixel
+   * values. These create blind spots in sibling dimension consistency
+   * checks because the actual rendered size cannot be determined statically.
+   *
+   * Particularly problematic inside flexWrap: 'wrap' containers where
+   * percentage widths create unpredictable wrapping behavior.
+   */
+  private detectOpaqueDimensions(graph: SemanticLayoutGraph): OpaqueDimension[] {
+    const opaque: OpaqueDimension[] = [];
+
+    for (const node of graph.getAllNodes()) {
+      if (node.isSlot) continue;
+
+      // Check if the node's parent has flexWrap: 'wrap'
+      let containerHasFlexWrap = false;
+      if (node.parentId) {
+        const parent = graph.getNode(node.parentId);
+        if (parent && parent.layout.flexWrap === 'wrap') {
+          containerHasFlexWrap = true;
+        }
+      }
+
+      // Check width
+      if (typeof node.layout.width === 'string') {
+        opaque.push({
+          node,
+          property: 'width',
+          value: node.layout.width,
+          containerHasFlexWrap,
+          severity: 'low',
+          description: `Opaque Dimension: <${node.componentName}> (line ${node.lineNumber}) has width: "${node.layout.width}" — a string/percentage value. This bypasses static dimension consistency checks.${containerHasFlexWrap ? ' Inside a flexWrap: wrap container, percentage widths create unpredictable wrapping behavior.' : ''}`,
+          suggestion: containerHasFlexWrap
+            ? `Replace width: "${node.layout.width}" with a numeric pixel value (e.g., width: 150) for deterministic layout inside the flexWrap container.`
+            : `Consider replacing width: "${node.layout.width}" with a numeric pixel value for deterministic dimension auditing.`,
+        });
+      }
+
+      // Check height
+      if (typeof node.layout.height === 'string') {
+        opaque.push({
+          node,
+          property: 'height',
+          value: node.layout.height,
+          containerHasFlexWrap,
+          severity: 'low',
+          description: `Opaque Dimension: <${node.componentName}> (line ${node.lineNumber}) has height: "${node.layout.height}" — a string/percentage value. This bypasses static dimension consistency checks.${containerHasFlexWrap ? ' Inside a flexWrap: wrap container, percentage heights create unpredictable wrapping behavior.' : ''}`,
+          suggestion: `Consider replacing height: "${node.layout.height}" with a numeric pixel value for deterministic dimension auditing.`,
+        });
+      }
+    }
+
+    return opaque;
   }
 }

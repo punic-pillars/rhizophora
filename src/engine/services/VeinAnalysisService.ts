@@ -186,6 +186,56 @@ function convertToReport(
     });
   }
 
+  // ─── v2.4.0: Dimension Inconsistencies (Gap 5b) ──────────────
+  // Detect same-type siblings with mismatched width/height values.
+  for (const di of result.dimensionInconsistencies) {
+    gaps.push({
+      severity: di.severity,
+      category: 'magic-number',
+      description: di.description,
+      location: `<${di.siblings[di.outlierIndex].componentName}> at line ${di.siblings[di.outlierIndex].lineNumber}`,
+      suggestion: di.suggestion,
+    });
+  }
+
+  // ─── v2.4.0: Section Merge Suggestions (Gap 4) ───────────────
+  // Detect unary sections adjacent to multi sections that should be merged.
+  for (const sm of result.sectionMergeSuggestions) {
+    gaps.push({
+      severity: sm.severity,
+      category: 'style-pollution',
+      description: sm.description,
+      location: `<${sm.unarySection.componentName}> at line ${sm.unarySection.lineNumber}`,
+      suggestion: sm.suggestion,
+    });
+  }
+
+  // ─── v2.5.0: Proportional Incoherences (Gap 6) ──────────────
+  // Detect children whose fontSize is disproportionately small
+  // compared to their parent's height.
+  for (const pi of result.proportionalIncoherences) {
+    gaps.push({
+      severity: pi.severity,
+      category: 'magic-number',
+      description: pi.description,
+      location: `<${pi.child.componentName}> at line ${pi.child.lineNumber}`,
+      suggestion: pi.suggestion,
+    });
+  }
+
+  // ─── v2.5.0: Opaque Dimensions (Gap 8) ──────────────────────
+  // Detect string/percentage width/height values that bypass
+  // static dimension consistency checks.
+  for (const od of result.opaqueDimensions) {
+    gaps.push({
+      severity: od.severity,
+      category: 'magic-number',
+      description: od.description,
+      location: `<${od.node.componentName}> at line ${od.node.lineNumber}`,
+      suggestion: od.suggestion,
+    });
+  }
+
   // Build summary with mode-aware label
 
   const modeLabel = mode === 'vein-propagation' ? 'Vein Propagation' : 'Boundary Gap Detection';

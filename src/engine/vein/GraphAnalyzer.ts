@@ -16,7 +16,7 @@
 //   semantic clusters and sub-cluster detection.
 // ============================================================
 
-import type { LayoutNode, RhythmViolation, ProximityIssue, ContextualGapViolation, BoundaryViolation, GroupingSuggestion, TerminalPaddingViolation } from './types.js';
+import type { LayoutNode, RhythmViolation, ProximityIssue, ContextualGapViolation, BoundaryViolation, GroupingSuggestion, TerminalPaddingViolation, DimensionInconsistency, SectionMergeSuggestion } from './types.js';
 import type { SemanticLayoutGraph } from './SemanticLayoutGraph.js';
 import { SemanticScorer } from './SemanticScorer.js';
 
@@ -999,6 +999,254 @@ export class GraphAnalyzer {
     clusters.push(currentCluster);
 
     return clusters;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // v2.4.0: Sibling Dimension Consistency (Gap 5b)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * v2.4.0 "Sibling Dimension Consistency": Find same-type siblings
+   * within a container that have mismatched width or height values.
+   *
+   * Groups siblings by component name, then checks if their numeric
+   * width/height values are consistent. Flags outliers that differ
+   * from the majority value.
+   *
+   * Example:
+   *   <Card height={200} />  <Card height={200} />  <Card height={180} />
+   *   → Third Card has height: 180, majority is 200 — flagged as outlier.
+   *
+   * Only checks numeric values (string values like '100%' are skipped).
+   * Only flags when there are 3+ same-type siblings for statistical significance.
+   *
+   * @param graph - The layout graph
+   * @returns Dimension inconsistencies
+   */
+  findDimensionInconsistencies(graph: SemanticLayoutGraph): DimensionInconsistency[] {
+    const inconsistencies: DimensionInconsistency[] = [];
+
+    for (const container of graph.getContainerNodes()) {
+      if (container.isSlot) continue;
+
+      // Group children by component name
+      const groups = new Map<string, LayoutNode[]>();
+      for (const child of container.children) {
+        if (child.isSlot) continue;
+        if (!child.isCustomComponent) continue;
+        const existing = groups.get(child.componentName) || [];
+        existing.push(child);
+        groups.set(child.componentName, existing);
+      }
+
+      // Check each group for dimension consistency
+      for (const [name, siblings] of groups) {
+        if (siblings.length < 3) continue; // Need 3+ for statistical significance
+
+        // Check width consistency
+        const widthValues = siblings
+          .map((s) => ({ node: s, value: typeof s.layout.width === 'number' ? s.layout.width : undefined }))
+          .filter((v): v is { node: LayoutNode; value: number } => v.value !== undefined);
+
+        if (widthValues.length >= 3) {
+          const widthInconsistency = this.findOutlierInDimension(
+            container, siblings, 'width', widthValues
+          );
+          if (widthInconsistency) {
+            inconsistencies.push(widthInconsistency);
+          }
+        }
+
+        // Check height consistency
+        const heightValues = siblings
+          .map((s) => ({ node: s, value: typeof s.layout.height === 'number' ? s.layout.height : undefined }))
+          .filter((v): v is { node: LayoutNode; value: number } => v.value !== undefined);
+
+        if (heightValues.length >= 3) {
+          const heightInconsistency = this.findOutlierInDimension(
+            container, siblings, 'height', heightValues
+          );
+          if (heightInconsistency) {
+            inconsistencies.push(heightInconsistency);
+          }
+        }
+      }
+    }
+
+    return inconsistencies;
+  }
+
+  /**
+   * Find an outlier in a set of dimension values for same-type siblings.
+   * Uses majority voting: the most common value is the "correct" one.
+   * Flags any sibling whose value differs from the majority.
+   */
+  private findOutlierInDimension(
+    container: LayoutNode,
+    siblings: LayoutNode[],
+    property: 'width' | 'height',
+    values: Array<{ node: LayoutNode; value: number }>
+  ): DimensionInconsistency | null {
+    if (values.length < 3) return null;
+
+    // Count occurrences of each value
+    const valueCounts = new Map<number, number>();
+    for (const { value } of values) {
+      valueCounts.set(value, (valueCounts.get(value) || 0) + 1);
+    }
+
+    // Find the majority value (most common)
+    let majorityValue = values[0].value;
+    let maxCount = 0;
+    for (const [val, count] of valueCounts) {
+      if (count > maxCount) {
+        maxCount = count;
+        majorityValue = val;
+      }
+    }
+
+    // Find outliers — siblings whose value differs from majority
+    const outlierIndices: number[] = [];
+    const allValues: number[] = [];
+    for (let i = 0; i < values.length; i++) {
+      allValues.push(values[i].value);
+      if (values[i].value !== majorityValue) {
+        outlierIndices.push(i);
+      }
+    }
+
+    if (outlierIndices.length === 0) return null;
+
+    // Report the first outlier
+    const outlierIndex = outlierIndices[0];
+    const outlierNode = values[outlierIndex].node;
+    const outlierValue = values[outlierIndex].value;
+
+    const siblingNames = siblings.map((s) => s.componentName).join(', ');
+    const severity: 'medium' | 'low' = outlierIndices.length >= 2 ? 'medium' : 'low';
+
+    return {
+      container,
+      siblings,
+      property,
+      values: allValues,
+      outlierIndex,
+      majorityValue,
+      severity,
+      description: `Dimension Inconsistency: <${outlierNode.componentName}> (line ${outlierNode.lineNumber}) has ${property}: ${outlierValue} but ${values.length - outlierIndices.length} of ${values.length} same-type siblings have ${property}: ${majorityValue}. Mismatched dimensions break visual consistency.`,
+      suggestion: `Change ${property} of <${outlierNode.componentName}> from ${outlierValue} to ${majorityValue} to match the other ${values.length - 1} <${outlierNode.componentName}> siblings.`,
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // v2.4.0: Section Merge Suggestions (Gap 4)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * v2.4.0 "Section Merge": Detect "Unary Section + Multi Section" pairs
+   * where a container with a single custom child sits adjacent to a
+   * container with multiple children, and they have high proximity (> 6).
+   *
+   * This suggests the unary section's child should be merged into the
+   * multi section to reduce unnecessary nesting.
+   *
+   * Algorithm (Step 7 in findGroupingSuggestions):
+   *   1. For each container, find "unary sections" (containers with exactly
+   *      1 custom child) and "multi sections" (containers with 2+ custom children).
+   *   2. For each unary section, check if it's adjacent to a multi section
+   *      in the parent container's children list.
+   *   3. If the proximity score between the unary section and multi section
+   *      is > 6, emit a SectionMergeSuggestion.
+   *
+   * @param graph - The layout graph
+   * @param pollutedContainers - Set of container IDs that have margin pollution
+   * @returns Section merge suggestions
+   */
+  findSectionMergeSuggestions(
+    graph: SemanticLayoutGraph,
+    pollutedContainers?: Set<string>
+  ): SectionMergeSuggestion[] {
+    const suggestions: SectionMergeSuggestion[] = [];
+
+    for (const container of graph.getContainerNodes()) {
+      if (container.isSlot) continue;
+      if (pollutedContainers?.has(container.id)) continue;
+
+      const customChildren = container.children.filter((c) => c.isCustomComponent && !c.isSlot);
+      if (customChildren.length < 2) continue;
+
+      // Identify unary sections (containers with exactly 1 custom child)
+      // and multi sections (containers with 2+ custom children)
+      const unarySections: LayoutNode[] = [];
+      const multiSections: LayoutNode[] = [];
+
+      for (const child of customChildren) {
+        const grandChildren = child.children.filter((gc) => gc.isCustomComponent && !gc.isSlot);
+        if (grandChildren.length === 1) {
+          unarySections.push(child);
+        } else if (grandChildren.length >= 2) {
+          multiSections.push(child);
+        }
+      }
+
+      if (unarySections.length === 0 || multiSections.length === 0) continue;
+
+      // Check each unary section against adjacent multi sections
+      for (const unary of unarySections) {
+        const unaryIdx = customChildren.indexOf(unary);
+        if (unaryIdx < 0) continue;
+
+        // Check the multi section immediately before or after the unary section
+        const adjacentMulti = this.findAdjacentMultiSection(
+          customChildren, unaryIdx, multiSections
+        );
+        if (!adjacentMulti) continue;
+
+        // Compute proximity score between the unary section and multi section
+        const score = this.scorer.computeScore(unary, adjacentMulti, graph);
+
+        if (score.total > 6) {
+          const childToMerge = unary.children.find((c) => c.isCustomComponent && !c.isSlot);
+          if (!childToMerge) continue;
+
+          suggestions.push({
+            unarySection: unary,
+            multiSection: adjacentMulti,
+            childToMerge,
+            proximityScore: score.total,
+            severity: 'medium',
+            description: `Section Merge Opportunity: <${unary.componentName}> (line ${unary.lineNumber}) is a unary section wrapping <${childToMerge.componentName}> adjacent to <${adjacentMulti.componentName}> (line ${adjacentMulti.lineNumber}) which has ${adjacentMulti.children.filter((c) => c.isCustomComponent && !c.isSlot).length} children. Proximity Score: ${score.total} — these are semantically related.`,
+            suggestion: `Merge <${childToMerge.componentName}> from <${unary.componentName}> into <${adjacentMulti.componentName}> and remove the unnecessary <${unary.componentName}> wrapper. This reduces nesting depth and simplifies the layout tree.`,
+          });
+        }
+      }
+    }
+
+    return suggestions;
+  }
+
+  /**
+   * Find a multi section adjacent to a unary section in the children list.
+   * Checks the immediate predecessor and successor.
+   */
+  private findAdjacentMultiSection(
+    children: LayoutNode[],
+    unaryIdx: number,
+    multiSections: LayoutNode[]
+  ): LayoutNode | null {
+    // Check predecessor
+    if (unaryIdx > 0) {
+      const prev = children[unaryIdx - 1];
+      if (multiSections.includes(prev)) return prev;
+    }
+
+    // Check successor
+    if (unaryIdx < children.length - 1) {
+      const next = children[unaryIdx + 1];
+      if (multiSections.includes(next)) return next;
+    }
+
+    return null;
   }
 
   // ─── Helpers ─────────────────────────────────────────────────

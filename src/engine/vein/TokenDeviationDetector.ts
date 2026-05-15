@@ -21,7 +21,9 @@ export class TokenDeviationDetector {
   }
 
   /**
-   * Detect spacing values that are not in the design token whitelist.
+   * Detect spacing and dimension values that are not in the design token whitelist.
+   * v2.4.0: Now also checks width, height, minWidth, minHeight, maxWidth, maxHeight
+   * against the design token whitelist. These live on node.layout, not node.spacing.
    */
   detect(graph: SemanticLayoutGraph): TokenDeviation[] {
     const deviations: TokenDeviation[] = [];
@@ -30,6 +32,7 @@ export class TokenDeviationDetector {
 
     for (const node of graph.getAllNodes()) {
       const spacing = node.spacing;
+      const layout = node.layout;
 
       const checkValue = (property: string, value: number | undefined) => {
         if (value === undefined) return;
@@ -42,6 +45,7 @@ export class TokenDeviationDetector {
         }
       };
 
+      // Spacing properties
       checkValue('margin', spacing.margin);
       checkValue('marginTop', spacing.marginTop);
       checkValue('marginBottom', spacing.marginBottom);
@@ -55,6 +59,14 @@ export class TokenDeviationDetector {
       checkValue('paddingVertical', spacing.paddingVertical);
       checkValue('paddingHorizontal', spacing.paddingHorizontal);
       checkValue('gap', spacing.gap);
+
+      // v2.4.0: Dimension properties — only check numeric values
+      if (typeof layout.width === 'number') checkValue('width', layout.width);
+      if (typeof layout.height === 'number') checkValue('height', layout.height);
+      if (typeof layout.minWidth === 'number') checkValue('minWidth', layout.minWidth);
+      if (typeof layout.minHeight === 'number') checkValue('minHeight', layout.minHeight);
+      if (typeof layout.maxWidth === 'number') checkValue('maxWidth', layout.maxWidth);
+      if (typeof layout.maxHeight === 'number') checkValue('maxHeight', layout.maxHeight);
     }
 
     return deviations;

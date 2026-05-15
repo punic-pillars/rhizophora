@@ -76,6 +76,7 @@ export interface LayoutProperties {
   flexDirection?: 'row' | 'column';
   justifyContent?: string;
   alignItems?: string;
+  flexWrap?: 'wrap' | 'nowrap';
   position?: 'relative' | 'absolute';
   top?: number;
   bottom?: number;
@@ -83,8 +84,13 @@ export interface LayoutProperties {
   right?: number;
   width?: number | string;
   height?: number | string;
+  minWidth?: number | string;
+  minHeight?: number | string;
+  maxWidth?: number | string;
+  maxHeight?: number | string;
   flex?: number;
   zIndex?: number;
+  fontSize?: number;
 }
 
 // ─── Graph Node ───────────────────────────────────────────────
@@ -156,6 +162,14 @@ export interface InferenceResult {
   groupingSuggestions: GroupingSuggestion[];
   /** v2.3.0: Terminal padding violations (last child redundant padding) */
   terminalPaddingViolations: TerminalPaddingViolation[];
+  /** v2.4.0: Dimension inconsistencies (same-type siblings with mismatched dimensions) */
+  dimensionInconsistencies: DimensionInconsistency[];
+  /** v2.4.0: Section merge suggestions (unary section adjacent to multi section) */
+  sectionMergeSuggestions: SectionMergeSuggestion[];
+  /** v2.5.0: Proportional incoherences (child fontSize vs parent height ratio) */
+  proportionalIncoherences: ProportionalIncoherence[];
+  /** v2.5.0: Opaque dimensions (string/percentage width/height that bypass static analysis) */
+  opaqueDimensions: OpaqueDimension[];
   healthScore: number;
   /** v1.1.0: Truncation info for partial analysis */
   truncation?: TruncationInfo;
@@ -263,6 +277,58 @@ export interface GroupingSuggestion {
   suggestion: string;
 }
 
+// ─── v2.4.0: Dimension Inconsistency Types ───────────────────
+
+/**
+ * v2.4.0: A dimension inconsistency occurs when same-type siblings
+ * have different width or height values. This flags components that
+ * should be visually consistent but have mismatched dimensions.
+ *
+ * Example: Two <Card> siblings where one has height: 200 and the
+ * other has height: 180 — they should match for visual consistency.
+ */
+export interface DimensionInconsistency {
+  container: LayoutNode;
+  siblings: LayoutNode[];
+  property: 'width' | 'height';
+  values: number[];
+  outlierIndex: number;
+  majorityValue: number;
+  severity: 'medium' | 'low';
+  description: string;
+  suggestion: string;
+}
+
+// ─── v2.4.0: Section Merge Suggestion Types ──────────────────
+
+/**
+ * v2.4.0: A section merge suggestion occurs when a "Unary Section"
+ * (a container with a single custom child) sits adjacent to a
+ * "Multi Section" (a container with multiple children) and they
+ * have high proximity (> 6). This suggests the unary section's
+ * child should be merged into the multi section.
+ *
+ * Example:
+ *   <ProfileSection>          <-- Multi Section (3 children)
+ *     <Avatar />
+ *     <Name />
+ *     <Bio />
+ *   </ProfileSection>
+ *   <ProfileEditButton>       <-- Unary Section (1 child)
+ *     <EditButton />
+ *   </ProfileEditButton>
+ *   → Merge EditButton into ProfileSection
+ */
+export interface SectionMergeSuggestion {
+  unarySection: LayoutNode;
+  multiSection: LayoutNode;
+  childToMerge: LayoutNode;
+  proximityScore: number;
+  severity: 'medium' | 'low';
+  description: string;
+  suggestion: string;
+}
+
 // ─── v2.3.0: Terminal Padding Violation Types ────────────────
 
 /**
@@ -277,6 +343,49 @@ export interface TerminalPaddingViolation {
   property: string;
   value: number;
   severity: 'medium';
+  description: string;
+  suggestion: string;
+}
+
+// ─── v2.5.0: Proportional Incoherence Types ──────────────────
+
+/**
+ * v2.5.0: A proportional incoherence occurs when a child's fontSize
+ * is disproportionately small compared to its parent's height.
+ * This detects elements where text is visually "lost" inside a large
+ * container (e.g., tiny text inside a tall button).
+ *
+ * Threshold: fontSize < 15% of parent height.
+ * Only checks when both values are numeric (no coordinate calculation).
+ */
+export interface ProportionalIncoherence {
+  parent: LayoutNode;
+  child: LayoutNode;
+  parentHeight: number;
+  childFontSize: number;
+  ratio: number;
+  severity: 'medium' | 'low';
+  description: string;
+  suggestion: string;
+}
+
+// ─── v2.5.0: Opaque Dimension Types ──────────────────────────
+
+/**
+ * v2.5.0: An opaque dimension occurs when width or height is set
+ * as a string/percentage value (e.g., '100%') instead of a numeric
+ * pixel value. These values bypass static dimension consistency
+ * checks and create blind spots in sibling dimension auditing.
+ *
+ * Particularly problematic inside flexWrap: 'wrap' containers where
+ * percentage widths create unpredictable wrapping behavior.
+ */
+export interface OpaqueDimension {
+  node: LayoutNode;
+  property: 'width' | 'height';
+  value: string;
+  containerHasFlexWrap: boolean;
+  severity: 'low';
   description: string;
   suggestion: string;
 }
